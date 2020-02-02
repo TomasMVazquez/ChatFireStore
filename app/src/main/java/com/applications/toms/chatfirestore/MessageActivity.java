@@ -349,7 +349,9 @@ public class MessageActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        seenListener.remove();
+        if (seenListener!=null) {
+            seenListener.remove();
+        }
         status("offline");
     }
 }

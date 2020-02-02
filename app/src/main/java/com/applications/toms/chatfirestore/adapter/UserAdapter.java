@@ -9,12 +9,21 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.applications.toms.chatfirestore.MessageActivity;
 import com.applications.toms.chatfirestore.R;
+import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
 import com.bumptech.glide.Glide;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.List;
 
@@ -23,6 +32,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     private Context mContext;
     private List<User> mUsers;
     private boolean ischat;
+
+    String theLastMessage;
 
     public UserAdapter(Context mContext, List<User> mUsers,boolean ischat) {
         this.mContext = mContext;
@@ -50,6 +61,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
             holder.profile_image.setImageResource(R.mipmap.ic_launcher);
         }else {
             Glide.with(mContext).load(user.getImageURL()).into(holder.profile_image);
+        }
+
+        if (ischat){
+            lastMessage(user.getId(), holder.last_msg);
+        }else {
+            holder.last_msg.setVisibility(View.GONE);
         }
 
         if (ischat){
@@ -88,6 +105,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         private ImageView profile_image;
         private ImageView img_on;
         private ImageView img_off;
+        private TextView last_msg;
 
         public ViewHolder (View itemview){
             super(itemview);
@@ -96,9 +114,47 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
             profile_image = itemview.findViewById(R.id.profile_image);
             img_on = itemview.findViewById(R.id.img_on);
             img_off = itemview.findViewById(R.id.img_off);
+            last_msg = itemview.findViewById(R.id.last_msg);
 
         }
 
+    }
+
+    private void lastMessage(final String userid, final TextView last_msg){
+        theLastMessage = "default";
+        final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        final FirebaseFirestore reference = FirebaseFirestore.getInstance();
+
+        reference.collection("Chats").addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                String idChat = null;
+                for (QueryDocumentSnapshot snapshots: queryDocumentSnapshots) {
+                    Chat chat = snapshots.toObject(Chat.class);
+                    if (chat.getSender().equals(firebaseUser.getUid()) && chat.getReceiver().equals(userid) ||
+                            chat.getSender().equals(userid) && chat.getReceiver().equals(firebaseUser.getUid())) {
+                        idChat = snapshots.getId();
+                        break;
+                    }
+                }
+                if (idChat!=null) {
+                    reference.collection("Chats").document(idChat).collection("Messages").addSnapshotListener(new EventListener<QuerySnapshot>() {
+                        @Override
+                        public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                            Chat lastChat = queryDocumentSnapshots.getDocuments().get(queryDocumentSnapshots.size()-1).toObject(Chat.class);
+                            theLastMessage = lastChat.getMessage();
+                            last_msg.setText(theLastMessage);
+                        }
+                    });
+                }else {
+                    theLastMessage = "No Message";
+                    last_msg.setText(theLastMessage);
+                }
+
+                last_msg.setText(theLastMessage);
+            }
+        });
     }
 
 }

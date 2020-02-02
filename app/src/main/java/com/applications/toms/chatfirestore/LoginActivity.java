@@ -28,6 +28,7 @@ public class LoginActivity extends AppCompatActivity {
     RelativeLayout loginContainer;
     MaterialEditText  email, password;
     Button btn_login;
+    TextView forgot_password;
 
     FirebaseAuth auth;
     FirebaseFirestore reference;
@@ -46,6 +47,7 @@ public class LoginActivity extends AppCompatActivity {
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
         btn_login = findViewById(R.id.btn_login);
+        forgot_password = findViewById(R.id.forgot_password);
 
         auth = FirebaseAuth.getInstance();
 
@@ -85,6 +87,13 @@ public class LoginActivity extends AppCompatActivity {
                     handled = true;
                 }
                 return handled;
+            }
+        });
+
+        forgot_password.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(LoginActivity.this,ResetPasswordActivity.class));
             }
         });
 

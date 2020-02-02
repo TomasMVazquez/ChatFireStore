@@ -92,7 +92,9 @@ public class ProfileFragment extends Fragment {
                 if (user.getImageURL().equals("default")){
                     image_profile.setImageResource(R.mipmap.ic_launcher);
                 }else {
-                    Glide.with(getContext()).load(user.getImageURL()).into(image_profile);
+                    if (getActivity()!=null) {
+                        Glide.with(getActivity()).load(user.getImageURL()).into(image_profile);
+                    }
                 }
             }
         });

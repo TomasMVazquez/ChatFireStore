@@ -123,6 +123,8 @@ public class MessageActivity extends AppCompatActivity {
 
         getUserMessage();
 
+        seenMessage(userid);
+
     }
 
     private void getUserMessage(){
@@ -142,8 +144,6 @@ public class MessageActivity extends AppCompatActivity {
                 readMessage(fuser.getUid(),userid,user.getImageURL());
             }
         });
-
-        seenMessage(userid);
 
     }
 
@@ -332,6 +332,12 @@ public class MessageActivity extends AppCompatActivity {
 
         userRef.update(hashMap);
 
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        seenMessage(userid);
     }
 
     @Override

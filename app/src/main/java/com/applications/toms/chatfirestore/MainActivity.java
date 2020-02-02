@@ -34,6 +34,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -71,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
                     if (user.getImageURL().equals("default")){
                         profile_image.setImageResource(R.mipmap.ic_launcher);
                     }else {
+                        //TODO You cannot start a load for a destroyed activity
                         Glide.with(MainActivity.this).load(user.getImageURL()).into(profile_image);
                     }
                 }
@@ -104,8 +106,8 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()){
             case R.id.logout:
                 FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(MainActivity.this, StartActivity.class));
-                finish();
+                startActivity(new Intent(MainActivity.this, StartActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
+//                finish();
                 return true;
         }
 
@@ -144,4 +146,28 @@ public class MainActivity extends AppCompatActivity {
             return titles.get(position);
         }
     }
+
+    private void status(String status){
+        DocumentReference userRef = reference.collection("Users").document(firebaseUser.getUid());
+
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("status",status);
+
+        userRef.update(hashMap);
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        status("online");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        status("offline");
+    }
+
+
 }

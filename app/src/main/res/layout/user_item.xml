@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -24,5 +25,32 @@
         android:textSize="18sp"
         />
 
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/img_on"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        app:civ_border_width="7dp"
+        app:civ_border_color="#05df29"
+        android:visibility="gone"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="-15dp"
+        android:layout_toEndOf="@id/profile_image"
+        android:layout_below="@id/username"
+        />
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/img_off"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        app:civ_border_width="7dp"
+        app:civ_border_color="#bfbfbf"
+        android:visibility="gone"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="-15dp"
+        android:layout_toEndOf="@id/profile_image"
+        android:layout_below="@id/username"
+        />
 
 </RelativeLayout>

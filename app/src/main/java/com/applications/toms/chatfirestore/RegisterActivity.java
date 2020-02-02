@@ -87,6 +87,7 @@ public class RegisterActivity extends AppCompatActivity {
                     user.put("id", userId);
                     user.put("username", username);
                     user.put("imageURL", "default");
+                    user.put("status", "offline");
 
                     final DocumentReference userRef = reference
                             .collection("Users")

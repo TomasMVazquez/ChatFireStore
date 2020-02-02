@@ -55,7 +55,7 @@ public class UsersFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         mUser = new ArrayList<>();
-        userAdapter = new UserAdapter(getContext(),mUser);
+        userAdapter = new UserAdapter(getContext(),mUser, false);
         recyclerView.setAdapter(userAdapter);
 
         readUsers();

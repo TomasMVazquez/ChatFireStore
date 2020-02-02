@@ -68,41 +68,27 @@ public class ChatsFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        userAdapter = new UserAdapter(getContext(),new ArrayList<User>());
-        recyclerView.setAdapter(userAdapter);
-
         fuser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
-
 
         reference.collection("Chats").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
 
                 for (DocumentChange dc : queryDocumentSnapshots.getDocumentChanges()) {
-                    switch (dc.getType()) {
-                        case ADDED:
-                            Chat chat = dc.getDocument().toObject(Chat.class);
+                    Chat chat = dc.getDocument().toObject(Chat.class);
 
-                            if (chat.getSender().equals(fuser.getUid())) {
-                                if (!userList.contains(chat.getReceiver())) {
-                                    userList.add(chat.getReceiver());
-                                }
-                            }
-                            if (chat.getReceiver().equals(fuser.getUid())) {
-                                if (!userList.contains(chat.getSender())) {
-                                    userList.add(chat.getSender());
-                                }
-                            }
-                            break;
-                        case MODIFIED:
-
-                            break;
-                        case REMOVED:
-
-                            break;
+                    if (chat.getSender().equals(fuser.getUid())) {
+                        userList.add(chat.getReceiver());
+                        Log.d(TAG, "onEvent: Added = " + chat.getId());
                     }
+                    if (chat.getReceiver().equals(fuser.getUid())) {
+                        userList.add(chat.getSender());
+                        Log.d(TAG, "onEvent: Added = " + chat.getId());
+                    }
+
                 }
+
                 readChats();
             }
         });
@@ -117,17 +103,50 @@ public class ChatsFragment extends Fragment {
         mUsers = new ArrayList<>();
         Log.d(TAG, "readChats: userList: " + userList);
 
-        for (String id:userList) {
-            reference.collection("Users").document(id).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                @Override
-                public void onSuccess(DocumentSnapshot documentSnapshot) {
-                    User user = documentSnapshot.toObject(User.class);
-                    mUsers.add(user);
-                    Log.d(TAG, "onSuccess: mUser:" + mUsers);
-                    userAdapter.setmUsers(mUsers);
+
+
+        reference.collection("Users").addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
+
+                for (DocumentChange dc : queryDocumentSnapshots.getDocumentChanges()) {
+                    User user = dc.getDocument().toObject(User.class);
+
+                    switch (dc.getType()) {
+                        case ADDED:
+                            if (userList.contains(user.getId())) {
+                                if (mUsers.size() != 0) {
+                                    for (User u : mUsers) {
+                                        if (!user.getId().equals(u.getId())) {
+                                            mUsers.add(user);
+                                            Log.d(TAG, "onEvent: AGREGADO " + user.getUsername());
+                                        }
+                                    }
+                                } else {
+                                    mUsers.add(user);
+                                    Log.d(TAG, "onEvent: AGREGADO " + user.getUsername());
+                                }
+                            }
+                            break;
+                        case MODIFIED:
+                            for (User u : mUsers) {
+                                if (user.getId().equals(u.getId())) {
+                                    mUsers.add(mUsers.indexOf(u),user);
+                                    mUsers.remove(u);
+                                    Log.d(TAG, "onEvent: Midificado " + user.getUsername());
+                                }
+                            }
+                            break;
+                        case REMOVED:
+
+                            break;
+                    }
+
                 }
-            });
-        }
+                userAdapter = new UserAdapter(getContext(),mUsers,true);
+                recyclerView.setAdapter(userAdapter);
+            }
+        });
 
     }
 

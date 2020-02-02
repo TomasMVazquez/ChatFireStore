@@ -7,10 +7,14 @@ import androidx.appcompat.widget.Toolbar;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
+import com.applications.toms.chatfirestore.util.Util;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -71,6 +75,18 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
 
+        password.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean handled = false;
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    Util.hideKeyboard(RegisterActivity.this);
+                    handled = true;
+                }
+                return handled;
+            }
+        });
+
     }
 
 
@@ -88,6 +104,7 @@ public class RegisterActivity extends AppCompatActivity {
                     user.put("username", username);
                     user.put("imageURL", "default");
                     user.put("status", "offline");
+                    user.put("search", username.toLowerCase());
 
                     final DocumentReference userRef = reference
                             .collection("Users")

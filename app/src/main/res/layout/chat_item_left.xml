@@ -23,4 +23,13 @@
         android:id="@+id/show_message"
         />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/txt_seen"
+        android:layout_below="@id/show_message"
+        tools:text="seen"
+        android:visibility="gone"
+        />
+
 </RelativeLayout>

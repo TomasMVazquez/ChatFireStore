@@ -35,6 +35,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.MetadataChanges;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -68,9 +69,10 @@ public class MessageActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
 
-    String imageurl;
     Intent intent;
     String userid;
+
+    ListenerRegistration seenListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +121,6 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
 
-
         getUserMessage();
 
     }
@@ -135,15 +136,44 @@ public class MessageActivity extends AppCompatActivity {
                 if (user.getImageURL().equals("default")){
                     profile_image.setImageResource(R.mipmap.ic_launcher);
                 }else {
-                    Glide.with(MessageActivity.this).load(user.getImageURL()).into(profile_image);
+                    Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
                 }
 
                 readMessage(fuser.getUid(),userid,user.getImageURL());
             }
         });
 
+        seenMessage(userid);
+
     }
 
+    private void seenMessage(final String userId){
+
+        getChatDB(fuser.getUid(), userId, new ResultListener<String>() {
+            @Override
+            public void finish(String result) {
+                if (result!=null) {
+                    seenListener = reference.collection("Chats").document(result).collection("Messages")
+                            .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                                @Override
+                                public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
+                                    for (QueryDocumentSnapshot dc : queryDocumentSnapshots) {
+                                        Chat chat = dc.toObject(Chat.class);
+                                        if (chat.getReceiver().equals(fuser.getUid()) && chat.getSender().equals(userId)) {
+                                            HashMap<String, Object> hashMap = new HashMap<>();
+                                            hashMap.put("isseen", true);
+                                            dc.getReference().update(hashMap);
+                                        }
+                                    }
+                                }
+                            });
+                }
+            }
+        });
+
+
+
+    }
 
     private void sendMessage(String sender, final String receiver, String message){
 
@@ -155,6 +185,7 @@ public class MessageActivity extends AppCompatActivity {
         hashMap.put("sender",sender);
         hashMap.put("receiver",receiver);
         hashMap.put("message",message);
+        hashMap.put("isseen",false);
 
         getChatDB(sender, receiver, new ResultListener<String>() {
             @Override
@@ -257,6 +288,12 @@ public class MessageActivity extends AppCompatActivity {
                                         }
                                         break;
                                     case MODIFIED:
+                                        for (Chat modifChat:mChat) {
+                                            if (modifChat.getId().equals(chat.getId())){
+                                                mChat.add(mChat.indexOf(modifChat),chat);
+                                                mChat.remove(modifChat);
+                                            }
+                                        }
                                         Log.d(TAG, "Modified: " + dc.getDocument().getData());
                                         break;
                                     case REMOVED:
@@ -306,6 +343,7 @@ public class MessageActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        seenListener.remove();
         status("offline");
     }
 }

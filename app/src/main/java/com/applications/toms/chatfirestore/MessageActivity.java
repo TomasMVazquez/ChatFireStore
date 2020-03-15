@@ -18,8 +18,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.applications.toms.chatfirestore.adapter.MessageAdapter;
+import com.applications.toms.chatfirestore.fragments.APIService;
 import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
+import com.applications.toms.chatfirestore.notifications.Client;
+import com.applications.toms.chatfirestore.notifications.Data;
+import com.applications.toms.chatfirestore.notifications.MyResponse;
+import com.applications.toms.chatfirestore.notifications.Sender;
 import com.applications.toms.chatfirestore.util.ResultListener;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -37,6 +42,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.MetadataChanges;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -49,10 +55,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MessageActivity extends AppCompatActivity {
 
-    private static final String TAG = "MessageActivity";
+    private static final String TAG = "TOM-MessageActivity";
 
     CircleImageView profile_image;
     TextView username;
@@ -74,6 +83,10 @@ public class MessageActivity extends AppCompatActivity {
 
     ListenerRegistration seenListener;
 
+    APIService apiService;
+
+    Boolean notify = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,9 +100,10 @@ public class MessageActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MessageActivity.this,MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
-                //finish();
             }
         });
+
+        apiService = Client.getClient("https://fcm.googleapis.com/").create(APIService.class);
 
         profile_image = findViewById(R.id.profile_image);
         username = findViewById(R.id.username);
@@ -111,6 +125,7 @@ public class MessageActivity extends AppCompatActivity {
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                notify = true;
                 String msg = text_send.getText().toString();
                 if (!msg.equals("")){
                     sendMessage(fuser.getUid(),userid,msg);
@@ -213,6 +228,59 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
 
+        reference.collection("Users").document(fuser.getUid()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        User userSendingMsg = document.toObject(User.class);
+                        sendNotification(receiver,userSendingMsg.getUsername(),message);
+                    }
+                }
+
+            }
+        });
+
+    }
+
+    private void sendNotification(String receiver, String username, String message) {
+        Log.d(TAG, "sendNotification: ");
+        Log.d(TAG, "receiver: " + receiver);
+        Log.d(TAG, "userSendingMsg: " + username);
+        Log.d(TAG, "message: " + message);
+
+        reference.collection("Users").document(receiver).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        User userReceivingMsg = document.toObject(User.class);
+                        String token = userReceivingMsg.getToken();
+                        Data data = new Data(fuser.getUid(),R.mipmap.ic_launcher,"New Message",username+": "+message,userid);
+                        Sender sender = new Sender(data,token);
+                        apiService.sendNotification(sender)
+                                .enqueue(new Callback<MyResponse>() {
+                                    @Override
+                                    public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
+                                        if (response.code() == 200){
+                                            if (response.body().success != 1){
+                                                Toast.makeText(getApplicationContext(), "FAILED!", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<MyResponse> call, Throwable t) {
+
+                                    }
+                                });
+                    }
+                }
+            }
+        });
+
     }
 
     public void getChatDB(final String sender, final String receiver, final ResultListener<String> resultListener){
@@ -276,6 +344,7 @@ public class MessageActivity extends AppCompatActivity {
                         public void onEvent(@Nullable QuerySnapshot snapshots, @Nullable FirebaseFirestoreException e) {
                             for (DocumentChange dc : snapshots.getDocumentChanges()) {
                                 Chat chat = dc.getDocument().toObject(Chat.class);
+                                Log.d(TAG, "onEvent: type= " + dc.getType());
                                 switch (dc.getType()) {
                                     case ADDED:
                                         if (mChat.size() > 0) {

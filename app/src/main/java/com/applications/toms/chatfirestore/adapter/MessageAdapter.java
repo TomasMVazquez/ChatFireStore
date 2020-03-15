@@ -65,7 +65,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
         if (imageurl.equals("default")){
             holder.profile_image.setImageResource(R.mipmap.ic_launcher);
         }else {
-            Glide.with(mContext).load(imageurl).into(holder.profile_image);
+            Glide.with(mContext.getApplicationContext()).load(imageurl).into(holder.profile_image);
         }
 
         if (position == mChat.size()-1){

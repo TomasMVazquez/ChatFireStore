@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -16,6 +17,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.applications.toms.chatfirestore.MessageActivity;
+import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -41,20 +43,25 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Log.d(TAG, "onMessageReceived: " + remoteMessage.getData());
 
         String sentedTo = remoteMessage.getData().get("sentedTo");
+        String user = remoteMessage.getData().get("user");
+
+        SharedPreferences preferences = getSharedPreferences("PREFS",MODE_PRIVATE);
+        String currentUser = preferences.getString("currentuser","none");
 
         FirebaseUser fuser = FirebaseAuth.getInstance().getCurrentUser();
 
-        if (sentedTo != null) { //TODO sacar cuando terminemos las pruebas
+        if (!currentUser.equals(user)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sendNotificationThroughChannel(remoteMessage);
-            }else {
+                ChatsFragment.refresh();
+            } else {
                 if (fuser != null && sentedTo.equals(fuser.getUid())) {
                     Log.d(TAG, "onMessageReceived: send to " + sentedTo);
                     sendNotification(remoteMessage);
+                    ChatsFragment.refresh();
                 }
             }
         }
-
 
     }
 
@@ -71,13 +78,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         RemoteMessage.Notification notification = remoteMessage.getNotification();
 
-        int j = Integer.parseInt(user.replaceAll("\\D",""));
+        long j = Long.parseLong(user.replaceAll("\\D",""));
         Intent intent = new Intent(this, MessageActivity.class);
         Bundle bundle = new Bundle();
         bundle.putString("userId",user);
         intent.putExtras(bundle);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this,j,intent,PendingIntent.FLAG_ONE_SHOT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, Math.toIntExact(j),intent,PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
@@ -86,7 +93,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         int i = 0;
         if (j>0){
-            i=j;
+            i=Math.toIntExact(j);
         }
 
         channelForNotifications.getManager().notify(i,builder.build());
@@ -105,13 +112,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         RemoteMessage.Notification notification = remoteMessage.getNotification();
 
-        int j = Integer.parseInt(user.replaceAll("\\D",""));
+        long j = Long.parseLong(user.replaceAll("\\D",""));
         Intent intent = new Intent(this, MessageActivity.class);
         Bundle bundle = new Bundle();
         bundle.putString("userId",user);
         intent.putExtras(bundle);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this,j,intent,PendingIntent.FLAG_ONE_SHOT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, (int) j,intent,PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
@@ -126,7 +133,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         int i = 0;
          if (j>0){
-             i=j;
+             i= (int) j;
          }
 
          notificationManager.notify(i,builder.build());

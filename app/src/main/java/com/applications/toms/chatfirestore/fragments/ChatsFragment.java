@@ -156,15 +156,17 @@ public class ChatsFragment extends Fragment {
                             }
                             break;
                         case MODIFIED:
+                            /*
                             for (User u : mUsers) {
-                                if (user.getId().equals(u.getId())) {
+                                if (!user.getId().equals(u.getId())) {
                                     mUsers.add(mUsers.indexOf(u),user);
                                     mUsers.remove(u);
                                     //Para que aparezca primero en la lista de contactos con los que estoy hablando
                                     //TODO aunque no me diga nada??
-                                    Log.d(TAG, "onEvent: Midificado " + user.getUsername());
                                 }
                             }
+                             */
+                            Log.d(TAG, "onEvent: Midificado " + user.getUsername());
                             break;
                         case REMOVED:
 
@@ -176,6 +178,11 @@ public class ChatsFragment extends Fragment {
                 recyclerView.setAdapter(userAdapter);
             }
         });
+
+    }
+
+    public static void refresh(){ //TODO ELIMINAR
+        Log.d(TAG, "refresh: ");
 
     }
 

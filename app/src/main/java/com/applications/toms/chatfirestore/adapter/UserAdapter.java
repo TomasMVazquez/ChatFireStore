@@ -2,6 +2,7 @@ package com.applications.toms.chatfirestore.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,17 +18,24 @@ import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
 import com.bumptech.glide.Glide;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
+
+    private static final String TAG = "TOM-UserAdapter";
 
     private Context mContext;
     private List<User> mUsers;
@@ -121,7 +129,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     }
 
     private void lastMessage(final String userid, final TextView last_msg){
-        theLastMessage = "default";
+        theLastMessage = "";
+        List<Chat> chats = new ArrayList<>();
         final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
         final FirebaseFirestore reference = FirebaseFirestore.getInstance();
@@ -129,6 +138,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         reference.collection("Chats").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                Log.d(TAG, "onEvent: lastmessage " + queryDocumentSnapshots.getMetadata());
                 String idChat = null;
                 for (QueryDocumentSnapshot snapshots: queryDocumentSnapshots) {
                     Chat chat = snapshots.toObject(Chat.class);
@@ -139,11 +149,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                     }
                 }
                 if (idChat!=null) {
-                    reference.collection("Chats").document(idChat).collection("Messages").addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    reference.collection("Chats").document(idChat).collection("Messages")
+                            .orderBy("id", Query.Direction.DESCENDING)
+                            .limit(1)
+                            .addSnapshotListener(new EventListener<QuerySnapshot>() {
                         @Override
                         public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                            Chat lastChat = queryDocumentSnapshots.getDocuments().get(queryDocumentSnapshots.size()-1).toObject(Chat.class);
-                            theLastMessage = lastChat.getMessage();
+                            theLastMessage = queryDocumentSnapshots.getDocuments().get(0).toObject(Chat.class).getMessage();
                             last_msg.setText(theLastMessage);
                         }
                     });

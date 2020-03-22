@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.style.TtsSpan;
 import android.util.Log;
@@ -117,7 +118,7 @@ public class MessageActivity extends AppCompatActivity {
         llm.setStackFromEnd(true);
         recyclerView.setLayoutManager(llm);
 
-        intent = getIntent();
+        intent = getIntent(); //TODO al abrir la notificacion no tengo data para saber de quien es
         userid = intent.getStringExtra("userid");
         fuser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
@@ -235,7 +236,10 @@ public class MessageActivity extends AppCompatActivity {
                     DocumentSnapshot document = task.getResult();
                     if (document.exists()) {
                         User userSendingMsg = document.toObject(User.class);
-                        sendNotification(receiver,userSendingMsg.getUsername(),message);
+                        if (notify) {
+                            sendNotification(receiver, userSendingMsg.getUsername(), message);
+                        }
+                        notify = false;
                     }
                 }
 
@@ -266,7 +270,7 @@ public class MessageActivity extends AppCompatActivity {
                                     public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
                                         if (response.code() == 200){
                                             if (response.body().success != 1){
-                                                Toast.makeText(getApplicationContext(), "FAILED!", Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(getApplicationContext(), "FAILED to send PUSH MSG!", Toast.LENGTH_SHORT).show();
                                             }
                                         }
                                     }
@@ -347,23 +351,23 @@ public class MessageActivity extends AppCompatActivity {
                                 Log.d(TAG, "onEvent: type= " + dc.getType());
                                 switch (dc.getType()) {
                                     case ADDED:
+                                        Log.d(TAG, "New: " + dc.getDocument().getData());
                                         if (mChat.size() > 0) {
                                             if (!mChat.get(mChat.size() - 1).getId().equals(chat.getId())) {
                                                 mChat.add(chat);
-                                                Log.d(TAG, "New: " + dc.getDocument().getData());
                                             }
                                         } else {
                                             mChat.add(chat);
                                         }
                                         break;
                                     case MODIFIED:
+                                        Log.d(TAG, "Modified: " + dc.getDocument().getData());
+                                        //Change database so the message in the chat appears as seen instead of delivered
                                         for (Chat modifChat:mChat) {
                                             if (modifChat.getId().equals(chat.getId())){
-                                                mChat.add(mChat.indexOf(modifChat),chat);
-                                                mChat.remove(modifChat);
+                                                mChat.set(mChat.indexOf(modifChat),chat);
                                             }
                                         }
-                                        Log.d(TAG, "Modified: " + dc.getDocument().getData());
                                         break;
                                     case REMOVED:
                                         Log.d(TAG, "Removed: " + dc.getDocument().getData());
@@ -393,6 +397,12 @@ public class MessageActivity extends AppCompatActivity {
         recyclerView.smoothScrollToPosition(chats.size());
     }
 
+    private void currentUser(String userid){
+        SharedPreferences.Editor editor = getSharedPreferences("PREFS",MODE_PRIVATE).edit();
+        editor.putString("currentuser",userid);
+        editor.apply();
+    }
+
     private void status(String status){
         DocumentReference userRef = reference.collection("Users").document(fuser.getUid());
 
@@ -402,6 +412,7 @@ public class MessageActivity extends AppCompatActivity {
         userRef.update(hashMap);
 
     }
+
 
     @Override
     protected void onRestart() {
@@ -413,6 +424,7 @@ public class MessageActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         status("online");
+        currentUser(userid);
     }
 
     @Override
@@ -422,5 +434,6 @@ public class MessageActivity extends AppCompatActivity {
             seenListener.remove();
         }
         status("offline");
+        currentUser("none");
     }
 }

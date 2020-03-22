@@ -144,23 +144,24 @@ public class MessageActivity extends AppCompatActivity {
     }
 
     private void getUserMessage(){
-        DocumentReference userRef = reference.collection("Users").document(userid);
+        if (userid != null) {
+            DocumentReference userRef = reference.collection("Users").document(userid);
 
-        userRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-            @Override
-            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                User user = documentSnapshot.toObject(User.class);
-                username.setText(user.getUsername());
-                if (user.getImageURL().equals("default")){
-                    profile_image.setImageResource(R.mipmap.ic_launcher);
-                }else {
-                    Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
+            userRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                @Override
+                public void onSuccess(DocumentSnapshot documentSnapshot) {
+                    User user = documentSnapshot.toObject(User.class);
+                    username.setText(user.getUsername());
+                    if (user.getImageURL().equals("default")) {
+                        profile_image.setImageResource(R.mipmap.ic_launcher);
+                    } else {
+                        Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
+                    }
+
+                    readMessage(fuser.getUid(), userid, user.getImageURL());
                 }
-
-                readMessage(fuser.getUid(),userid,user.getImageURL());
-            }
-        });
-
+            });
+        }
     }
 
     private void seenMessage(final String userId){
@@ -169,7 +170,9 @@ public class MessageActivity extends AppCompatActivity {
             @Override
             public void finish(String result) {
                 if (result!=null) {
-                    seenListener = reference.collection("Chats").document(result).collection("Messages")
+                    seenListener = reference.collection("Chats")
+                            .document(result)
+                            .collection("Messages")
                             .addSnapshotListener(new EventListener<QuerySnapshot>() {
                                 @Override
                                 public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
@@ -423,7 +426,7 @@ public class MessageActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        status("online");
+        status("online"); //TODO no se actyaliza automaticamente
         currentUser(userid);
     }
 

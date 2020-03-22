@@ -53,12 +53,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (!currentUser.equals(user)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sendNotificationThroughChannel(remoteMessage);
-                ChatsFragment.refresh();
             } else {
                 if (fuser != null && sentedTo.equals(fuser.getUid())) {
                     Log.d(TAG, "onMessageReceived: send to " + sentedTo);
                     sendNotification(remoteMessage);
-                    ChatsFragment.refresh();
                 }
             }
         }

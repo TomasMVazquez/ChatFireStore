@@ -131,7 +131,6 @@ public class ChatsFragment extends Fragment {
         Log.d(TAG, "readChats: userList: " + userList);
 
 
-
         reference.collection("Users").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
@@ -156,17 +155,18 @@ public class ChatsFragment extends Fragment {
                             }
                             break;
                         case MODIFIED:
-                            /*
-                            for (User u : mUsers) {
-                                if (!user.getId().equals(u.getId())) {
-                                    mUsers.add(mUsers.indexOf(u),user);
-                                    mUsers.remove(u);
-                                    //Para que aparezca primero en la lista de contactos con los que estoy hablando
-                                    //TODO aunque no me diga nada??
+                            //Para los cambios de estado online/offline de los usuarios
+                            if (!user.getId().equals(fuser.getUid())){
+                                Log.d(TAG, "onEvent: DISTINTO AL USUARIO ACTUAL");
+                                for (User u : mUsers) {
+                                    if (user.getId().equals(u.getId())) {
+                                        mUsers.add(mUsers.indexOf(u),user);
+                                        mUsers.remove(u);
+                                        Log.d(TAG, "onEvent: " + user.getUsername() + " cambio de estado de " + u.getStatus() + " a " + user.getStatus());
+                                        break;
+                                    }
                                 }
                             }
-                             */
-                            Log.d(TAG, "onEvent: Midificado " + user.getUsername());
                             break;
                         case REMOVED:
 
@@ -178,11 +178,6 @@ public class ChatsFragment extends Fragment {
                 recyclerView.setAdapter(userAdapter);
             }
         });
-
-    }
-
-    public static void refresh(){ //TODO ELIMINAR
-        Log.d(TAG, "refresh: ");
 
     }
 

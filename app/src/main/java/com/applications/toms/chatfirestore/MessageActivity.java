@@ -426,7 +426,7 @@ public class MessageActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        status("online"); //TODO no se actyaliza automaticamente
+        status("online");
         currentUser(userid);
     }
 

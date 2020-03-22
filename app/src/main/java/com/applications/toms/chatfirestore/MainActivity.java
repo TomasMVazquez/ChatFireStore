@@ -11,6 +11,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Switch;
@@ -40,6 +41,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "TOM-MainActivity";
     CircleImageView profile_image;
     TextView username;
 
@@ -167,6 +169,5 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         status("offline");
     }
-
 
 }

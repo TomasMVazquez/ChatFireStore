@@ -118,7 +118,7 @@ public class MessageActivity extends AppCompatActivity {
         llm.setStackFromEnd(true);
         recyclerView.setLayoutManager(llm);
 
-        intent = getIntent(); //TODO al abrir la notificacion no tengo data para saber de quien es
+        intent = getIntent();
         userid = intent.getStringExtra("userid");
         fuser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
@@ -265,7 +265,7 @@ public class MessageActivity extends AppCompatActivity {
                     if (document.exists()) {
                         User userReceivingMsg = document.toObject(User.class);
                         String token = userReceivingMsg.getToken();
-                        Data data = new Data(fuser.getUid(),R.mipmap.ic_launcher,"New Message",username+": "+message,userid);
+                        Data data = new Data(fuser.getUid(),R.drawable.ic_stat_name,"New Message",username+": "+message,userid);
                         Sender sender = new Sender(data,token);
                         apiService.sendNotification(sender)
                                 .enqueue(new Callback<MyResponse>() {

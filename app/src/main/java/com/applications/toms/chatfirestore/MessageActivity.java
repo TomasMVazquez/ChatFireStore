@@ -127,7 +127,7 @@ public class MessageActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 notify = true;
-                String msg = text_send.getText().toString();
+                String msg = text_send.getText().toString().trim();
                 if (!msg.equals("")){
                     sendMessage(fuser.getUid(),userid,msg);
                 }else {

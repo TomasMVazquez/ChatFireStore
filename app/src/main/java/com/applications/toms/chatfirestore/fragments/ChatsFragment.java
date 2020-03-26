@@ -48,7 +48,7 @@ public class ChatsFragment extends Fragment {
 
     private RecyclerView recyclerView;
 
-    private UserAdapter userAdapter;
+    private static UserAdapter userAdapter;
     private List<User> mUsers;
 
     FirebaseUser fuser;
@@ -128,8 +128,6 @@ public class ChatsFragment extends Fragment {
     private void readChats(){
 
         mUsers = new ArrayList<>();
-        Log.d(TAG, "readChats: userList: " + userList);
-
 
         reference.collection("Users").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
@@ -157,7 +155,6 @@ public class ChatsFragment extends Fragment {
                         case MODIFIED:
                             //Para los cambios de estado online/offline de los usuarios
                             if (!user.getId().equals(fuser.getUid())){
-                                Log.d(TAG, "onEvent: DISTINTO AL USUARIO ACTUAL");
                                 for (User u : mUsers) {
                                     if (user.getId().equals(u.getId())) {
                                         mUsers.add(mUsers.indexOf(u),user);
@@ -179,6 +176,11 @@ public class ChatsFragment extends Fragment {
             }
         });
 
+    }
+
+    public static void refresh(String userId){
+        Log.d(TAG, "refresh: " + userId);
+        userAdapter.moveChat(userId);
     }
 
 }

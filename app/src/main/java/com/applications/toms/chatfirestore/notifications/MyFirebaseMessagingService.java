@@ -17,6 +17,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import com.applications.toms.chatfirestore.MessageActivity;
+import com.applications.toms.chatfirestore.adapter.UserAdapter;
 import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -53,10 +54,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (!currentUser.equals(user)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sendNotificationThroughChannel(remoteMessage);
+                ChatsFragment.refresh(user);
             } else {
                 if (fuser != null && sentedTo.equals(fuser.getUid())) {
                     Log.d(TAG, "onMessageReceived: send to " + sentedTo);
                     sendNotification(remoteMessage);
+                    ChatsFragment.refresh(user);
                 }
             }
         }
@@ -147,5 +150,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             userRef.update("token", token);
         }
     }
+
 
 }

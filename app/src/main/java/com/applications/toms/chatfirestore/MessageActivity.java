@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import com.applications.toms.chatfirestore.adapter.MessageAdapter;
 import com.applications.toms.chatfirestore.fragments.APIService;
+import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.notifications.Client;
@@ -130,6 +131,7 @@ public class MessageActivity extends AppCompatActivity {
                 String msg = text_send.getText().toString().trim();
                 if (!msg.equals("")){
                     sendMessage(fuser.getUid(),userid,msg);
+                    ChatsFragment.refresh(userid);
                 }else {
                     Snackbar.make(bottom,"You cannot send empty msg",Snackbar.LENGTH_SHORT).show();
                 }

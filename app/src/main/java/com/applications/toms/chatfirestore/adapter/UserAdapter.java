@@ -31,6 +31,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
@@ -38,7 +39,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     private static final String TAG = "TOM-UserAdapter";
 
     private Context mContext;
-    private List<User> mUsers;
+    private static List<User> mUsers;
     private boolean ischat;
 
     String theLastMessage;
@@ -130,7 +131,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
 
     private void lastMessage(final String userid, final TextView last_msg){
         theLastMessage = "";
-        List<Chat> chats = new ArrayList<>();
+
         final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
         final FirebaseFirestore reference = FirebaseFirestore.getInstance();
@@ -165,8 +166,27 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                 }
 
                 last_msg.setText(theLastMessage);
+
             }
         });
+    }
+
+
+    public void moveChat(String userId){
+        for (User u : mUsers) {
+            if (u.getId().equals(userId)) {
+                Log.d(TAG, "moving");
+                moveItems(mUsers.indexOf(u));
+                break;
+            }
+        }
+    }
+
+    private void moveItems(int position){
+        User targetUser = mUsers.get(position);
+        mUsers.remove(position);
+        mUsers.add(0,targetUser);
+        this.notifyItemMoved(position,0);
     }
 
 }

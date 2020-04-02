@@ -1,4 +1,58 @@
 <resources>
     <string name="app_name">ChatFireStore</string>
 
+    //XML
+    <string name="email">Email</string>
+    <string name="password">Contraseña</string>
+    <string name="forgot_password">Recuperar Contraseña</string>
+    <string name="create_account">Crear nueva cuenta</string>
+    <string name="username">Nombre de usuario</string>
+    <string name="register">Registrar</string>
+    <string name="reset_pass">Recuperar</string>
+    <string name="reset_explanation">Al clickear recuperar, recibirás un email para ingresar una nueva contraseña</string>
+    <string name="type_msg">Escribe un mensaje...</string>
+    <string name="search">Buscar...</string>
+
+    //JAVA
+    <string name="toolbar_title_login">Login</string>
+    <string name="toolbar_title_register">Registro</string>
+    <string name="toolbar_title_reset_pass">Recuperar Contraseña</string>
+
+    <string name="fragment_title_chats">Chats</string>
+    <string name="fragment_title_users">Usuarios</string>
+    <string name="fragment_title_profile">Perfil</string>
+
+    <string name="error_verification_empty">Todos los campos deben estar completos</string>
+    <string name="error_authentication">La autenticación falló!</string>
+    <string name="error_email">Favor de verificar el correo electrónico</string>
+    <string name="error_short_password">La contraseña debe tener al menos 6 caracteres</string>
+
+    <string name="error_email_already_registered">Ese correo ya se encuentra registrado</string>
+    <string name="error_register">Error al registrar con ese correo o esa contraseña, favor de verificar</string>
+
+    <string name="error_image_db">Error al guardar imagen en la base de datos</string>
+    <string name="error_image_upload">Error al seleccionar imagen</string>
+    <string name="image_uploading">Subiendo...</string>
+    <string name="error_image_upload_progress">Subiendo imagen...</string>
+
+    <string name="error_no_msg">No se puede enviar mensajes vacios</string>
+    <string name="error_msg_push">Error al enviar notificación</string>
+
+    <string name="status_on">online</string>
+    <string name="status_off">offline</string>
+
+    <string name="image_default">default</string>
+
+    <string name="seen">Visto</string>
+    <string name="delivered">Entregado</string>
+
+    <string name="no_msg">Sin Mensajes</string>
+
+    <string name="new_msg">Nuevo Mensaje</string>
+
+    //API SERVICES
+    <string name="fcm_url">https://fcm.googleapis.com/</string>
+
+    //SERVICE
+
 </resources>

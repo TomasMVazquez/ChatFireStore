@@ -1,4 +1,4 @@
-package com.applications.toms.chatfirestore.fragments;
+package com.applications.toms.chatfirestore.notifications;
 
 import com.applications.toms.chatfirestore.notifications.MyResponse;
 import com.applications.toms.chatfirestore.notifications.Sender;

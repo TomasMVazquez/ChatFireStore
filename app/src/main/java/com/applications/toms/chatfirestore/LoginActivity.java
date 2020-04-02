@@ -25,32 +25,34 @@ import com.rengwuxian.materialedittext.MaterialEditText;
 
 public class LoginActivity extends AppCompatActivity {
 
-    RelativeLayout loginContainer;
-    MaterialEditText  email, password;
-    Button btn_login;
-    TextView forgot_password;
+    private RelativeLayout loginContainer;
+    private MaterialEditText  email, password;
 
-    FirebaseAuth auth;
-    FirebaseFirestore reference;
+    private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        //Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Login");
+        getSupportActionBar().setTitle(getString(R.string.toolbar_title_login));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        //Componentes
         loginContainer = findViewById(R.id.loginContainer);
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
-        btn_login = findViewById(R.id.btn_login);
-        forgot_password = findViewById(R.id.forgot_password);
+        Button btn_login = findViewById(R.id.btn_login);
+        TextView forgot_password = findViewById(R.id.forgot_password);
 
+        //Firebase Auth
         auth = FirebaseAuth.getInstance();
 
+        //Al hacer click en el boton Login realiza la verificación
+        // y Genera la autenticaciñon con firebase email y pass
         btn_login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -58,7 +60,7 @@ public class LoginActivity extends AppCompatActivity {
                 String txt_password = password.getText().toString();
 
                 if (TextUtils.isEmpty(txt_email) || TextUtils.isEmpty(txt_password)){
-                    Snackbar.make(loginContainer,"All fields are required",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(loginContainer,getString(R.string.error_verification_empty),Snackbar.LENGTH_SHORT).show();
                 }else {
                     auth.signInWithEmailAndPassword(txt_email,txt_password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                         @Override
@@ -69,7 +71,7 @@ public class LoginActivity extends AppCompatActivity {
                                 startActivity(intent);
                                 finish();
                             }else {
-                                Snackbar.make(loginContainer,"Authentication Failed!",Snackbar.LENGTH_SHORT).show();
+                                Snackbar.make(loginContainer,getString(R.string.error_authentication),Snackbar.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -77,6 +79,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        //Esconde el teclado cuando se presiona enter
         password.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -90,6 +93,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        //Botón para ir a la activity de restear pass
         forgot_password.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -17,6 +17,7 @@ import com.applications.toms.chatfirestore.MessageActivity;
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
+import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -39,10 +40,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     private static final String TAG = "TOM-UserAdapter";
 
     private Context mContext;
-    private static List<User> mUsers;
+    private List<User> mUsers;
     private boolean ischat;
 
-    String theLastMessage;
+    private String theLastMessage;
 
     public UserAdapter(Context mContext, List<User> mUsers,boolean ischat) {
         this.mContext = mContext;
@@ -66,7 +67,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         final User user = mUsers.get(position);
         holder.username.setText(user.getUsername());
-        if (user.getImageURL().equals("default")){
+        if (user.getImageURL().equals(mContext.getString(R.string.image_default))){
             holder.profile_image.setImageResource(R.mipmap.ic_launcher);
         }else {
             Glide.with(mContext.getApplicationContext()).load(user.getImageURL()).into(holder.profile_image);
@@ -79,7 +80,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         }
 
         if (ischat){
-            if (user.getStatus().equals("online")){
+            if (user.getStatus().equals(mContext.getString(R.string.status_on))){
                 holder.img_on.setVisibility(View.VISIBLE);
                 holder.img_off.setVisibility(View.GONE);
             }else {
@@ -91,12 +92,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
             holder.img_off.setVisibility(View.GONE);
         }
 
-
+        //Al clickear en el item del usuario ir al chat
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(mContext, MessageActivity.class);
-                intent.putExtra("userid",user.getId());
+                intent.putExtra(Keys.KEY_MSG_USERID,user.getId());
                 mContext.startActivity(intent);
             }
         });
@@ -129,6 +130,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
 
     }
 
+    //Revisar el último mensaje recibido/enviado
     private void lastMessage(final String userid, final TextView last_msg){
         theLastMessage = "";
 
@@ -136,10 +138,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
 
         final FirebaseFirestore reference = FirebaseFirestore.getInstance();
 
-        reference.collection("Chats").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        reference.collection(Keys.KEY_CHATS).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                Log.d(TAG, "onEvent: lastmessage " + queryDocumentSnapshots.getMetadata());
+
                 String idChat = null;
                 for (QueryDocumentSnapshot snapshots: queryDocumentSnapshots) {
                     Chat chat = snapshots.toObject(Chat.class);
@@ -150,8 +152,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                     }
                 }
                 if (idChat!=null) {
-                    reference.collection("Chats").document(idChat).collection("Messages")
-                            .orderBy("id", Query.Direction.DESCENDING)
+                    reference.collection(Keys.KEY_CHATS).document(idChat).collection(Keys.KEY_MESSAGES)
+                            .orderBy(Keys.KEY_MESSAGES_ID, Query.Direction.DESCENDING)
                             .limit(1)
                             .addSnapshotListener(new EventListener<QuerySnapshot>() {
                         @Override
@@ -161,7 +163,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                         }
                     });
                 }else {
-                    theLastMessage = "No Message";
+                    theLastMessage = mContext.getString(R.string.no_msg);
                     last_msg.setText(theLastMessage);
                 }
 
@@ -172,6 +174,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     }
 
 
+    //Métodos para mover mensaje según el último con el que se habló
     public void moveChat(String userId){
         for (User u : mUsers) {
             if (u.getId().equals(userId)) {

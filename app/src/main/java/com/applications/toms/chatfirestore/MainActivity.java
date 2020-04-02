@@ -21,6 +21,7 @@ import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.fragments.ProfileFragment;
 import com.applications.toms.chatfirestore.fragments.UsersFragment;
 import com.applications.toms.chatfirestore.model.User;
+import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -42,36 +43,41 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "TOM-MainActivity";
-    CircleImageView profile_image;
-    TextView username;
 
-    FirebaseUser firebaseUser;
-    FirebaseFirestore reference;
+    //Componentes
+    private CircleImageView profile_image;
+    private TextView username;
+
+    //Firebase Componentes
+    private FirebaseUser firebaseUser;
+    private FirebaseFirestore reference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("");
 
-
+        //Componentes
         profile_image = findViewById(R.id.profile_image);
         username = findViewById(R.id.username);
-
+        //Firebase
         firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
 
-        DocumentReference userRef = reference.collection("Users").document(firebaseUser.getUid());
+        //Buscar nombre y avatar del usuario para pegar en el Toolbar
+        DocumentReference userRef = reference.collection(Keys.KEY_USERS).document(firebaseUser.getUid());
         userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
             @Override
             public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
                 if (documentSnapshot.exists()){
                     User user = documentSnapshot.toObject(User.class);
                     username.setText(user.getUsername());
-                    if (user.getImageURL().equals("default")){
+                    if (user.getImageURL().equals(getString(R.string.image_default))){
                         profile_image.setImageResource(R.mipmap.ic_launcher);
                     }else {
                         Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
@@ -80,14 +86,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        //TabLayout y ViewPager
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         ViewPager viewPager = findViewById(R.id.view_pager);
 
         ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
 
-        viewPagerAdapter.addFragment(new ChatsFragment(),"Chats");
-        viewPagerAdapter.addFragment(new UsersFragment(),"Users");
-        viewPagerAdapter.addFragment(new ProfileFragment(),"Profile");
+        viewPagerAdapter.addFragment(new ChatsFragment(),getString(R.string.fragment_title_chats));
+        viewPagerAdapter.addFragment(new UsersFragment(),getString(R.string.fragment_title_users));
+        viewPagerAdapter.addFragment(new ProfileFragment(),getString(R.string.fragment_title_profile));
 
         viewPager.setAdapter(viewPagerAdapter);
 
@@ -95,13 +103,14 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
+    //Menú del Toolbar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
         return true;
     }
 
+    //Boton del toolbar para desloguearse
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
@@ -115,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    //ViewPager para pegar los fragment en el main activity
     class ViewPagerAdapter extends FragmentPagerAdapter {
 
         private ArrayList<Fragment> fragments;
@@ -148,11 +158,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Método de cambio de estado en la base de datos
     private void status(String status){
-        DocumentReference userRef = reference.collection("Users").document(firebaseUser.getUid());
+        DocumentReference userRef = reference.collection(Keys.KEY_USERS).document(firebaseUser.getUid());
 
         HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("status",status);
+        hashMap.put(Keys.KEY_USERS_STATUS,status);
 
         userRef.update(hashMap);
 
@@ -161,13 +172,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        status("online");
+        //Cambio del estado del usuario a online estando la app en primer plano
+        status(getString(R.string.status_on));
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        status("offline");
+        //Cambio del estado del usuario a offline estando la app en segundo plano
+        status(getString(R.string.status_off));
     }
 
 }

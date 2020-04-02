@@ -16,6 +16,7 @@ public class ChannelForNotifications extends ContextWrapper {
 
     public static final String CHANNEL_ID = "com.applications.toms.chatfirestore";
     public static final String CHANNEL_NAME = "chatfirestore";
+
     private NotificationManager notificationManager;
 
     public ChannelForNotifications(Context base) {

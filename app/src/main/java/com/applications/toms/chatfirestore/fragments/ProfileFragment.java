@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.model.User;
+import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -48,20 +49,19 @@ import static android.app.Activity.RESULT_OK;
  */
 public class ProfileFragment extends Fragment {
 
-    public static final int IMAGE_REQUEST = 1;
+    private static final int IMAGE_REQUEST = 1;
 
-    CircleImageView image_profile;
-    TextView username;
-    RelativeLayout relativeProfile;
+    //Componentes
+    private CircleImageView image_profile;
+    private TextView username;
+    private RelativeLayout relativeProfile;
 
-    FirebaseUser fuser;
-    FirebaseFirestore reference;
-    DocumentReference userRef;
-
-    StorageReference storageReference;
-    private Uri imageUri;
+    //Firebase
+    private DocumentReference userRef;
+    private StorageReference storageReference;
     private UploadTask uploadTask;
 
+    //Constructor
     public ProfileFragment() {
         // Required empty public constructor
     }
@@ -73,23 +73,25 @@ public class ProfileFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
+        //Componentes
         image_profile = view.findViewById(R.id.profile_image);
         username = view.findViewById(R.id.username);
         relativeProfile = view.findViewById(R.id.relativeProfile);
 
-        storageReference = FirebaseStorage.getInstance().getReference("uploads");
+        //Firebase
+        storageReference = FirebaseStorage.getInstance().getReference(Keys.KEY_STORAGE);
+        FirebaseUser fuser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseFirestore reference = FirebaseFirestore.getInstance();
 
-        fuser = FirebaseAuth.getInstance().getCurrentUser();
-        reference = FirebaseFirestore.getInstance();
+        userRef = reference.collection(Keys.KEY_USERS).document(fuser.getUid());
 
-        userRef = reference.collection("Users").document(fuser.getUid());
-
+        //Check DB si el usuario tiene un avatar
         userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
             @Override
             public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
                 User user = documentSnapshot.toObject(User.class);
                 username.setText(user.getUsername());
-                if (user.getImageURL().equals("default")){
+                if (user.getImageURL().equals(getString(R.string.image_default))){
                     image_profile.setImageResource(R.mipmap.ic_launcher);
                 }else {
                     if (getActivity()!=null) {
@@ -99,6 +101,7 @@ public class ProfileFragment extends Fragment {
             }
         });
 
+        //En caso de click en la imagen abrir para que seleccione una imagen
         image_profile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -109,6 +112,7 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
+    //Al abrir imagen
     private void openImage() {
         Intent intent = new Intent();
         intent.setType("image/*");
@@ -122,9 +126,10 @@ public class ProfileFragment extends Fragment {
         return mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(uri));
     }
 
+    //Guardar umagen en DB
     private void uploadImage(Uri uri){
         final ProgressDialog pd = new ProgressDialog(getContext());
-        pd.setMessage("Uploading");
+        pd.setMessage(getString(R.string.image_uploading));
         pd.show();
 
         if (uri != null){
@@ -150,11 +155,11 @@ public class ProfileFragment extends Fragment {
                         Uri downloadUri = task.getResult();
                         String mUri = downloadUri.toString();
 
-                        userRef.update("imageURL",mUri);
+                        userRef.update(Keys.KEY_USERS_IMAGEURL,mUri);
 
                         pd.dismiss();
                     }else {
-                        Snackbar.make(relativeProfile,"FAILED!",Snackbar.LENGTH_SHORT).show();
+                        Snackbar.make(relativeProfile,getString(R.string.error_image_db),Snackbar.LENGTH_SHORT).show();
                         pd.dismiss();
                     }
                 }
@@ -167,7 +172,7 @@ public class ProfileFragment extends Fragment {
             });
 
         }else {
-            Snackbar.make(relativeProfile,"No image uploaded",Snackbar.LENGTH_SHORT).show();
+            Snackbar.make(relativeProfile,getString(R.string.error_image_upload),Snackbar.LENGTH_SHORT).show();
         }
 
     }
@@ -178,10 +183,10 @@ public class ProfileFragment extends Fragment {
 
         if (requestCode == IMAGE_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getData() != null){
-            imageUri = data.getData();
+            Uri imageUri = data.getData();
 
             if (uploadTask != null && uploadTask.isInProgress()){
-                Snackbar.make(relativeProfile,"Upload in progress",Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(relativeProfile,getString(R.string.error_image_upload_progress),Snackbar.LENGTH_SHORT).show();
             }else {
                 uploadImage(imageUri);
             }

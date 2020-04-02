@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.applications.toms.chatfirestore.util.Keys;
 import com.applications.toms.chatfirestore.util.Util;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -32,31 +33,34 @@ import java.util.Map;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    RelativeLayout registerContainer;
-    MaterialEditText username, email, password;
-    Button btn_register;
+    private RelativeLayout registerContainer;
+    private MaterialEditText username, email, password;
 
-    FirebaseAuth auth;
-    FirebaseFirestore reference;
+    private FirebaseAuth auth;
+    private FirebaseFirestore reference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        //Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Register");
+        getSupportActionBar().setTitle(getString(R.string.toolbar_title_register));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        //Componentes
         registerContainer = findViewById(R.id.registerContainer);
         username = findViewById(R.id.username);
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
-        btn_register = findViewById(R.id.btn_register);
+        Button btn_register = findViewById(R.id.btn_register);
 
+        //Firebase Auth
         auth = FirebaseAuth.getInstance();
 
+        //Al hacer click en el boton registrar verifica y llama al método para registrar
         btn_register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,9 +69,9 @@ public class RegisterActivity extends AppCompatActivity {
                 String txt_password = password.getText().toString();
 
                 if (TextUtils.isEmpty(txt_username) || TextUtils.isEmpty(txt_email) || TextUtils.isEmpty(txt_password)){
-                    Snackbar.make(registerContainer,"All fields are required",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(registerContainer,getString(R.string.error_verification_empty),Snackbar.LENGTH_SHORT).show();
                 }else if (txt_password.length() < 6){
-                    Snackbar.make(registerContainer,"Password must be at least 6 characters",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(registerContainer,getString(R.string.error_short_password),Snackbar.LENGTH_SHORT).show();
                 }else {
                     register(txt_username,txt_email,txt_password);
                 }
@@ -75,6 +79,7 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
 
+        //Esconde teclado una vez clickeado enter en la pass
         password.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -89,7 +94,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     }
 
-
+    //Método para realizar la registraciñon a través de firebase
     private void register (final String username, String email, String password){
         auth.createUserWithEmailAndPassword(email,password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
@@ -100,14 +105,14 @@ public class RegisterActivity extends AppCompatActivity {
                     reference = FirebaseFirestore.getInstance();
 
                     final Map<String, String> user = new HashMap<>();
-                    user.put("id", userId);
-                    user.put("username", username);
-                    user.put("imageURL", "default");
-                    user.put("status", "offline");
-                    user.put("search", username.toLowerCase());
+                    user.put(Keys.KEY_USERS_ID, userId);
+                    user.put(Keys.KEY_USERS_USERNAME, username);
+                    user.put(Keys.KEY_USERS_IMAGEURL, getString(R.string.image_default));
+                    user.put(Keys.KEY_USERS_STATUS, getString(R.string.status_off));
+                    user.put(Keys.KEY_USERS_SEARCH, username.toLowerCase());
 
                     final DocumentReference userRef = reference
-                            .collection("Users")
+                            .collection(Keys.KEY_USERS)
                             .document(userId);
 
                     userRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
@@ -125,12 +130,12 @@ public class RegisterActivity extends AppCompatActivity {
                                     }
                                 });
                             }else {
-                                Snackbar.make(registerContainer,"Email already registered",Snackbar.LENGTH_SHORT).show();
+                                Snackbar.make(registerContainer,getString(R.string.error_email_already_registered),Snackbar.LENGTH_SHORT).show();
                             }
                         }
                     });
                 }else {
-                    Snackbar.make(registerContainer,"You cannot register with this email or password",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(registerContainer,getString(R.string.error_register),Snackbar.LENGTH_SHORT).show();
                 }
             }
         });

@@ -65,7 +65,7 @@
             android:id="@+id/text_send"
             android:layout_toLeftOf="@id/btn_send"
             android:background="@android:color/transparent"
-            android:hint="Type a message..."
+            android:hint="@string/type_msg"
             android:layout_centerVertical="true"
             />
 

@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.style.TtsSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -19,7 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.applications.toms.chatfirestore.adapter.MessageAdapter;
-import com.applications.toms.chatfirestore.fragments.APIService;
+import com.applications.toms.chatfirestore.notifications.APIService;
 import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
@@ -27,6 +26,7 @@ import com.applications.toms.chatfirestore.notifications.Client;
 import com.applications.toms.chatfirestore.notifications.Data;
 import com.applications.toms.chatfirestore.notifications.MyResponse;
 import com.applications.toms.chatfirestore.notifications.Sender;
+import com.applications.toms.chatfirestore.util.Keys;
 import com.applications.toms.chatfirestore.util.ResultListener;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -43,8 +43,6 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.MetadataChanges;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -65,35 +63,30 @@ public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "TOM-MessageActivity";
 
-    CircleImageView profile_image;
-    TextView username;
+    //Componentes
+    private CircleImageView profile_image;
+    private TextView username;
+    private EditText text_send;
+    private RelativeLayout bottom;
+    private RecyclerView recyclerView;
 
-    FirebaseUser fuser;
-    FirebaseFirestore reference;
+    //Firebase
+    private FirebaseUser fuser;
+    private FirebaseFirestore reference;
 
-    ImageButton btn_send;
-    EditText text_send;
-    RelativeLayout bottom;
-
-    MessageAdapter messageAdapter;
-    List<Chat> mChat;
-
-    RecyclerView recyclerView;
-
-    Intent intent;
-    String userid;
-
-    ListenerRegistration seenListener;
-
-    APIService apiService;
-
-    Boolean notify = false;
+    private MessageAdapter messageAdapter;
+    private List<Chat> mChat;
+    private String userid;
+    private ListenerRegistration seenListener;
+    private APIService apiService;
+    private Boolean notify = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_message);
 
+        //Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("");
@@ -105,12 +98,14 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
 
-        apiService = Client.getClient("https://fcm.googleapis.com/").create(APIService.class);
+        //Servicio para las notificaciones
+        apiService = Client.getClient(getString(R.string.fcm_url)).create(APIService.class);
 
+        //Componentes
         profile_image = findViewById(R.id.profile_image);
         username = findViewById(R.id.username);
         text_send = findViewById(R.id.text_send);
-        btn_send = findViewById(R.id.btn_send);
+        ImageButton btn_send = findViewById(R.id.btn_send);
         bottom = findViewById(R.id.bottom);
         recyclerView = findViewById(R.id.recycler_view);
 
@@ -119,11 +114,13 @@ public class MessageActivity extends AppCompatActivity {
         llm.setStackFromEnd(true);
         recyclerView.setLayoutManager(llm);
 
-        intent = getIntent();
-        userid = intent.getStringExtra("userid");
+        //Intent para abrir el chat
+        Intent intent = getIntent();
+        userid = intent.getStringExtra(Keys.KEY_MSG_USERID);
         fuser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
 
+        //Click en el btn para enviar el mensaje
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -133,28 +130,32 @@ public class MessageActivity extends AppCompatActivity {
                     sendMessage(fuser.getUid(),userid,msg);
                     ChatsFragment.refresh(userid);
                 }else {
-                    Snackbar.make(bottom,"You cannot send empty msg",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(bottom,getString(R.string.error_no_msg),Snackbar.LENGTH_SHORT).show();
                 }
                 text_send.setText("");
             }
         });
 
+        //Llamar a los métodos para llenar el chat
         getUserMessage();
 
         seenMessage(userid);
 
     }
 
+    //Métodos
+
+    //Obtener al usuario para luego obtener los mensajes
     private void getUserMessage(){
         if (userid != null) {
-            DocumentReference userRef = reference.collection("Users").document(userid);
+            DocumentReference userRef = reference.collection(Keys.KEY_USERS).document(userid);
 
             userRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                 @Override
                 public void onSuccess(DocumentSnapshot documentSnapshot) {
                     User user = documentSnapshot.toObject(User.class);
                     username.setText(user.getUsername());
-                    if (user.getImageURL().equals("default")) {
+                    if (user.getImageURL().equals(getString(R.string.image_default))) {
                         profile_image.setImageResource(R.mipmap.ic_launcher);
                     } else {
                         Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
@@ -166,15 +167,16 @@ public class MessageActivity extends AppCompatActivity {
         }
     }
 
+    //Actualizar si el mensaje enviado fue visto o no
     private void seenMessage(final String userId){
 
         getChatDB(fuser.getUid(), userId, new ResultListener<String>() {
             @Override
             public void finish(String result) {
                 if (result!=null) {
-                    seenListener = reference.collection("Chats")
+                    seenListener = reference.collection(Keys.KEY_CHATS)
                             .document(result)
-                            .collection("Messages")
+                            .collection(Keys.KEY_MESSAGES)
                             .addSnapshotListener(new EventListener<QuerySnapshot>() {
                                 @Override
                                 public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
@@ -182,7 +184,7 @@ public class MessageActivity extends AppCompatActivity {
                                         Chat chat = dc.toObject(Chat.class);
                                         if (chat.getReceiver().equals(fuser.getUid()) && chat.getSender().equals(userId)) {
                                             HashMap<String, Object> hashMap = new HashMap<>();
-                                            hashMap.put("isseen", true);
+                                            hashMap.put(Keys.KEY_CHATS_ISSEEN, true);
                                             dc.getReference().update(hashMap);
                                         }
                                     }
@@ -192,21 +194,20 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
 
-
-
     }
 
+    //Enviar mensaje
     private void sendMessage(String sender, final String receiver, String message){
 
         final HashMap<String,Object> hashMapUsers = new HashMap<>();
-        hashMapUsers.put("sender",sender);
-        hashMapUsers.put("receiver",receiver);
+        hashMapUsers.put(Keys.KEY_MESSAGES_SEN,sender);
+        hashMapUsers.put(Keys.KEY_MESSAGES_REC,receiver);
 
         final HashMap<String,Object> hashMap = new HashMap<>();
-        hashMap.put("sender",sender);
-        hashMap.put("receiver",receiver);
-        hashMap.put("message",message);
-        hashMap.put("isseen",false);
+        hashMap.put(Keys.KEY_MESSAGES_SEN,sender);
+        hashMap.put(Keys.KEY_MESSAGES_REC,receiver);
+        hashMap.put(Keys.KEY_MESSAGES_MSG,message);
+        hashMap.put(Keys.KEY_CHATS_ISSEEN,false);
 
         getChatDB(sender, receiver, new ResultListener<String>() {
             @Override
@@ -214,18 +215,18 @@ public class MessageActivity extends AppCompatActivity {
                 DocumentReference chatRef;
 
                 if (result != null){
-                    chatRef = reference.collection("Chats").document(result);
+                    chatRef = reference.collection(Keys.KEY_CHATS).document(result);
                 }else {
-                    chatRef = reference.collection("Chats").document();
+                    chatRef = reference.collection(Keys.KEY_CHATS).document();
                     chatRef.set(hashMapUsers);
                     getUserMessage();
                 }
 
-                final CollectionReference msgRef = chatRef.collection("Messages");
+                final CollectionReference msgRef = chatRef.collection(Keys.KEY_MESSAGES);
                 getMessageList(msgRef, new ResultListener<List<Chat>>() {
                     @Override
                     public void finish(List<Chat> result) {
-                        hashMap.put("id",result.size());
+                        hashMap.put(Keys.KEY_MESSAGES_ID,result.size());
                         msgRef.document(String.valueOf(result.size())).set(hashMap);
                     }
                 });
@@ -234,7 +235,7 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
 
-        reference.collection("Users").document(fuser.getUid()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+        reference.collection(Keys.KEY_USERS).document(fuser.getUid()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                 if (task.isSuccessful()) {
@@ -253,13 +254,10 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
+    //Enviar notificacion
     private void sendNotification(String receiver, String username, String message) {
-        Log.d(TAG, "sendNotification: ");
-        Log.d(TAG, "receiver: " + receiver);
-        Log.d(TAG, "userSendingMsg: " + username);
-        Log.d(TAG, "message: " + message);
 
-        reference.collection("Users").document(receiver).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+        reference.collection(Keys.KEY_USERS).document(receiver).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                 if (task.isSuccessful()) {
@@ -267,7 +265,7 @@ public class MessageActivity extends AppCompatActivity {
                     if (document.exists()) {
                         User userReceivingMsg = document.toObject(User.class);
                         String token = userReceivingMsg.getToken();
-                        Data data = new Data(fuser.getUid(),R.drawable.ic_stat_name,"New Message",username+": "+message,userid);
+                        Data data = new Data(fuser.getUid(),R.drawable.ic_stat_name,getString(R.string.new_msg),username+": "+message,userid);
                         Sender sender = new Sender(data,token);
                         apiService.sendNotification(sender)
                                 .enqueue(new Callback<MyResponse>() {
@@ -275,7 +273,7 @@ public class MessageActivity extends AppCompatActivity {
                                     public void onResponse(Call<MyResponse> call, Response<MyResponse> response) {
                                         if (response.code() == 200){
                                             if (response.body().success != 1){
-                                                Toast.makeText(getApplicationContext(), "FAILED to send PUSH MSG!", Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(getApplicationContext(), getString(R.string.error_msg_push), Toast.LENGTH_SHORT).show();
                                             }
                                         }
                                     }
@@ -292,9 +290,10 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
+    //Obtener mensajes del chat
     public void getChatDB(final String sender, final String receiver, final ResultListener<String> resultListener){
 
-        CollectionReference chatsRef = reference.collection("Chats");
+        CollectionReference chatsRef = reference.collection(Keys.KEY_CHATS);
 
         chatsRef.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
@@ -303,8 +302,8 @@ public class MessageActivity extends AppCompatActivity {
                     if (task.getResult().size()>0) {
                         String rdo = null;
                         for (QueryDocumentSnapshot queryDocumentSnapshot : task.getResult()) {
-                            if (queryDocumentSnapshot.get("sender").equals(sender) && queryDocumentSnapshot.get("receiver").equals(receiver) ||
-                                    queryDocumentSnapshot.get("sender").equals(receiver) && queryDocumentSnapshot.get("receiver").equals(sender)) {
+                            if (queryDocumentSnapshot.get(Keys.KEY_CHATS_SENDER).equals(sender) && queryDocumentSnapshot.get(Keys.KEY_CHATS_RECEIVER).equals(receiver) ||
+                                    queryDocumentSnapshot.get(Keys.KEY_CHATS_SENDER).equals(receiver) && queryDocumentSnapshot.get(Keys.KEY_CHATS_RECEIVER).equals(sender)) {
                                 rdo = queryDocumentSnapshot.getId();
                             }
                         }
@@ -318,6 +317,7 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
+    //Obtener la lusta de mensajes
     public void getMessageList(CollectionReference msgRef, final ResultListener<List<Chat>> resultListener){
         final List<Chat> chatList = new ArrayList<>();
 
@@ -334,10 +334,11 @@ public class MessageActivity extends AppCompatActivity {
         });
     }
 
+    //Leer mensajes
     private void readMessage(final String myid, final String userid, final String imageurl){
         mChat = new ArrayList<>();
 
-        final CollectionReference chatRef = reference.collection("Chats");
+        final CollectionReference chatRef = reference.collection(Keys.KEY_CHATS);
 
         messageAdapter = new MessageAdapter(MessageActivity.this,mChat,imageurl);
 
@@ -347,16 +348,14 @@ public class MessageActivity extends AppCompatActivity {
             public void finish(String result) {
                 mChat.clear();
                 if (result!=null) {
-                    CollectionReference msgRef = chatRef.document(result).collection("Messages");
+                    CollectionReference msgRef = chatRef.document(result).collection(Keys.KEY_MESSAGES);
                     msgRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
                         @Override
                         public void onEvent(@Nullable QuerySnapshot snapshots, @Nullable FirebaseFirestoreException e) {
                             for (DocumentChange dc : snapshots.getDocumentChanges()) {
                                 Chat chat = dc.getDocument().toObject(Chat.class);
-                                Log.d(TAG, "onEvent: type= " + dc.getType());
                                 switch (dc.getType()) {
                                     case ADDED:
-                                        Log.d(TAG, "New: " + dc.getDocument().getData());
                                         if (mChat.size() > 0) {
                                             if (!mChat.get(mChat.size() - 1).getId().equals(chat.getId())) {
                                                 mChat.add(chat);
@@ -366,7 +365,6 @@ public class MessageActivity extends AppCompatActivity {
                                         }
                                         break;
                                     case MODIFIED:
-                                        Log.d(TAG, "Modified: " + dc.getDocument().getData());
                                         //Change database so the message in the chat appears as seen instead of delivered
                                         for (Chat modifChat:mChat) {
                                             if (modifChat.getId().equals(chat.getId())){
@@ -409,10 +407,10 @@ public class MessageActivity extends AppCompatActivity {
     }
 
     private void status(String status){
-        DocumentReference userRef = reference.collection("Users").document(fuser.getUid());
+        DocumentReference userRef = reference.collection(Keys.KEY_USERS).document(fuser.getUid());
 
         HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("status",status);
+        hashMap.put(Keys.KEY_USERS_STATUS,status);
 
         userRef.update(hashMap);
 
@@ -428,7 +426,7 @@ public class MessageActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        status("online");
+        status(getString(R.string.status_on));
         currentUser(userid);
     }
 
@@ -438,7 +436,7 @@ public class MessageActivity extends AppCompatActivity {
         if (seenListener!=null) {
             seenListener.remove();
         }
-        status("offline");
+        status(getString(R.string.status_off));
         currentUser("none");
     }
 }

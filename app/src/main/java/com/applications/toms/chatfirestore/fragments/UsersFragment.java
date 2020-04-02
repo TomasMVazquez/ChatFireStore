@@ -23,6 +23,7 @@ import android.widget.TextView;
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.adapter.UserAdapter;
 import com.applications.toms.chatfirestore.model.User;
+import com.applications.toms.chatfirestore.util.Keys;
 import com.applications.toms.chatfirestore.util.Util;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -46,12 +47,13 @@ import javax.annotation.Nullable;
  */
 public class UsersFragment extends Fragment {
 
-    private RecyclerView recyclerView;
     private UserAdapter userAdapter;
     private List<User> mUser;
 
-    EditText search_users;
+    //Componente
+    private EditText search_users;
 
+    //Constructor
     public UsersFragment() {
         // Required empty public constructor
     }
@@ -65,16 +67,18 @@ public class UsersFragment extends Fragment {
 
         mUser = new ArrayList<>();
 
+        //Componentes
         search_users = view.findViewById(R.id.search_users);
-
-        recyclerView = view.findViewById(R.id.recycler_view);
+        RecyclerView recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         userAdapter = new UserAdapter(getContext(),mUser, false);
         recyclerView.setAdapter(userAdapter);
 
+        //Método para buscar todos los usuarios de la app
         readUsers();
 
+        //Búsqueda de usuarios por nombre
         search_users.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -92,6 +96,7 @@ public class UsersFragment extends Fragment {
             }
         });
 
+        //Esconder el teclado al enter
         search_users.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -109,11 +114,12 @@ public class UsersFragment extends Fragment {
         return view;
     }
 
+    //Métodos
     private void searchUsers(String s) {
-
+        //Buscar usuario en la base de datos
         final FirebaseUser fuser = FirebaseAuth.getInstance().getCurrentUser();
-        Query query = FirebaseFirestore.getInstance().collection("Users")
-                .orderBy("search")
+        Query query = FirebaseFirestore.getInstance().collection(Keys.KEY_USERS)
+                .orderBy(Keys.KEY_USERS_SEARCH)
                 .startAt(s)
                 .endAt(s+"\uf0ff");
 
@@ -138,10 +144,11 @@ public class UsersFragment extends Fragment {
 
     private void readUsers(){
 
+        //Buscar todos los usuarios de la app en la DB
         final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         FirebaseFirestore reference = FirebaseFirestore.getInstance();
 
-        CollectionReference listUserRef = reference.collection("Users");
+        CollectionReference listUserRef = reference.collection(Keys.KEY_USERS);
         listUserRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {

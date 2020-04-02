@@ -23,14 +23,12 @@ import java.util.List;
 
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHolder> {
 
-    public static final int MSG_TYPE_LEFT = 0;
-    public static final int MSG_TYPE_RIGHT = 1;
+    private static final int MSG_TYPE_LEFT = 0;
+    private static final int MSG_TYPE_RIGHT = 1;
 
     private Context mContext;
     private List<Chat> mChat;
     private String imageurl;
-
-    FirebaseUser fuser;
 
     public MessageAdapter(Context mContext, List<Chat> mChat,String imageurl) {
             this.mContext = mContext;
@@ -62,7 +60,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
         holder.show_message.setText(chat.getMessage());
 
-        if (imageurl.equals("default")){
+        if (imageurl.equals(mContext.getString(R.string.image_default))){
             holder.profile_image.setImageResource(R.mipmap.ic_launcher);
         }else {
             Glide.with(mContext.getApplicationContext()).load(imageurl).into(holder.profile_image);
@@ -70,9 +68,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
         if (position == mChat.size()-1){
             if (chat.isIsseen()){
-                holder.txt_seen.setText("Seen");
+                holder.txt_seen.setText(mContext.getString(R.string.seen));
             }else {
-                holder.txt_seen.setText("Delivered");
+                holder.txt_seen.setText(mContext.getString(R.string.delivered));
             }
         }else {
             holder.txt_seen.setVisibility(View.GONE);
@@ -103,7 +101,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
     @Override
     public int getItemViewType(int position) {
-        fuser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser fuser = FirebaseAuth.getInstance().getCurrentUser();
         if (mChat.get(position).getSender().equals(fuser.getUid())){
             return MSG_TYPE_RIGHT;
         }else {

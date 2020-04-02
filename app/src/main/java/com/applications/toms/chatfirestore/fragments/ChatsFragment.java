@@ -18,6 +18,7 @@ import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.adapter.UserAdapter;
 import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
+import com.applications.toms.chatfirestore.util.Keys;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -46,17 +47,19 @@ public class ChatsFragment extends Fragment {
 
     private static final String TAG = "TOM-ChatsFragment";
 
+    //Componentes
     private RecyclerView recyclerView;
 
+    //Atributos
     private static UserAdapter userAdapter;
     private List<User> mUsers;
 
-    FirebaseUser fuser;
-    FirebaseFirestore reference;
+    private FirebaseUser fuser;
+    private FirebaseFirestore reference;
 
     private List<String> userList = new ArrayList<>();
 
-
+    //Constructor
     public ChatsFragment() {
         // Required empty public constructor
     }
@@ -67,15 +70,16 @@ public class ChatsFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_chats, container, false);
-
+        //Componentes
         recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
+        //Firebase
         fuser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
 
-        reference.collection("Chats").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        //Buscar chats del usuario en la base de datos
+        reference.collection(Keys.KEY_CHATS).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
 
@@ -83,20 +87,24 @@ public class ChatsFragment extends Fragment {
                     Chat chat = dc.getDocument().toObject(Chat.class);
 
                     if (chat.getSender().equals(fuser.getUid())) {
+                        //Guardar con quien se tiene un chat
                         userList.add(chat.getReceiver());
-                        Log.d(TAG, "onEvent: Added = " + chat.getId());
                     }
                     if (chat.getReceiver().equals(fuser.getUid())) {
+                        //Guardar con quien se tiene un chat
                         userList.add(chat.getSender());
-                        Log.d(TAG, "onEvent: Added = " + chat.getId());
                     }
 
                 }
 
+                //Llamar al método leer chats
+                // para buscar los usuarios con los que se está hablando
+                // y llenar el recyclerview
                 readChats();
             }
         });
 
+        //Buscar Token y guardarlo para las notificaciones
         FirebaseInstanceId.getInstance().getInstanceId()
                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
                     @Override
@@ -111,6 +119,7 @@ public class ChatsFragment extends Fragment {
 
                         // Log and toast
                         Log.d(TAG, "onComplete: token is " + token);
+                        //LLamar al método para actualizar el token en la base de datos
                         updateTokenDB(token);
                     }
                 });
@@ -118,18 +127,19 @@ public class ChatsFragment extends Fragment {
         return view;
     }
 
+    //Métodos
+
     private void updateTokenDB(String token){
         if (fuser != null) {
-            DocumentReference userRef = reference.collection("Users").document(fuser.getUid());
-            userRef.update("token", token);
+            DocumentReference userRef = reference.collection(Keys.KEY_USERS).document(fuser.getUid());
+            userRef.update(Keys.KEY_USERS_TOKEN, token);
         }
     }
 
     private void readChats(){
-
         mUsers = new ArrayList<>();
-
-        reference.collection("Users").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        //Buscar a los usuarios de los chats en la base de datos
+        reference.collection(Keys.KEY_USERS).addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
 
@@ -143,12 +153,10 @@ public class ChatsFragment extends Fragment {
                                     for (User u : mUsers) {
                                         if (!user.getId().equals(u.getId())) {
                                             mUsers.add(user);
-                                            Log.d(TAG, "onEvent: AGREGADO " + user.getUsername());
                                         }
                                     }
                                 } else {
                                     mUsers.add(user);
-                                    Log.d(TAG, "onEvent: AGREGADO " + user.getUsername());
                                 }
                             }
                             break;
@@ -159,7 +167,6 @@ public class ChatsFragment extends Fragment {
                                     if (user.getId().equals(u.getId())) {
                                         mUsers.add(mUsers.indexOf(u),user);
                                         mUsers.remove(u);
-                                        Log.d(TAG, "onEvent: " + user.getUsername() + " cambio de estado de " + u.getStatus() + " a " + user.getStatus());
                                         break;
                                     }
                                 }
@@ -178,6 +185,7 @@ public class ChatsFragment extends Fragment {
 
     }
 
+    //Método para mover el item del recycler según con quien hablé último
     public static void refresh(String userId){
         Log.d(TAG, "refresh: " + userId);
         userAdapter.moveChat(userId);

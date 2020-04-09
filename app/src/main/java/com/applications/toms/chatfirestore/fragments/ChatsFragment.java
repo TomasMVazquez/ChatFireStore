@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.adapter.UserAdapter;
 import com.applications.toms.chatfirestore.model.Chat;
+import com.applications.toms.chatfirestore.model.Indexs;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.util.Keys;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -37,6 +38,8 @@ import com.google.firebase.iid.InstanceIdResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -60,6 +63,9 @@ public class ChatsFragment extends Fragment {
     private FirebaseFirestore reference;
 
     private List<String> userList = new ArrayList<>();
+
+    private List<Indexs> indexsList = new ArrayList<>();
+    private List<Indexs> list = new ArrayList<>();
 
     //Constructor
     public ChatsFragment() {
@@ -91,18 +97,24 @@ public class ChatsFragment extends Fragment {
                     if (chat.getSender().equals(fuser.getUid())) {
                         //Guardar con quien se tiene un chat
                         userList.add(chat.getReceiver());
+                        if (!containsIndexChat(indexsList,dc.getDocument().getId())) {
+                            Indexs indexs = new Indexs(dc.getDocument().getId(),chat.getReceiver());
+                            indexsList.add(indexs);
+                        }
                     }
                     if (chat.getReceiver().equals(fuser.getUid())) {
                         //Guardar con quien se tiene un chat
                         userList.add(chat.getSender());
+                        if (!containsIndexChat(indexsList,dc.getDocument().getId())) {
+                            Indexs indexs = new Indexs(dc.getDocument().getId(),chat.getSender());
+                            indexsList.add(indexs);
+                        }
                     }
 
                 }
-
-                //Llamar al método leer chats
-                // para buscar los usuarios con los que se está hablando
-                // y llenar el recyclerview
-                readChats();
+                
+                //Buscar index de los chats
+                getIndexChats(indexsList);
             }
         });
 
@@ -130,6 +142,54 @@ public class ChatsFragment extends Fragment {
     }
 
     //Métodos
+
+    private static boolean containsIndexChat(Collection<Indexs> c, String id) {
+        for(Indexs o : c) {
+            if(o != null && o.getIdChat().equals(id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void sortArrayIndex(List<Indexs> chats){
+        Collections.sort(chats, new Comparator<Indexs>() {
+            @Override
+            public int compare(Indexs o1, Indexs o2) {
+                return o1.getIndex() - o2.getIndex();
+            }
+        });
+    }
+
+    private void getIndexChats(List<Indexs> indexs){
+        list.clear();
+        for (Indexs i:indexs) {
+            reference.collection(Keys.KEY_CHATS).document(i.getIdChat()).collection(Keys.KEY_INDEX_COLLECTION).document(fuser.getUid()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if (task.isSuccessful()){
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            Integer index = Integer.valueOf(document.get(Keys.KEY_INDEX).toString());
+                            for (Indexs newInd:indexs) {
+                                if (newInd.getIdChat().equals(document.getReference().getParent().getParent().getId())){
+                                    newInd.setIndex(index);
+                                    list.add(newInd);
+                                }
+                            }
+                            if (list.size() == indexs.size()){
+                                sortArrayIndex(list);
+                                //Llamar al método leer chats
+                                // para buscar los usuarios con los que se está hablando
+                                // y llenar el recyclerview
+                                readChats();
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
 
     private void updateTokenDB(String token){
         if (fuser != null) {
@@ -178,7 +238,18 @@ public class ChatsFragment extends Fragment {
                     }
 
                 }
-                userAdapter = new UserAdapter(getContext(),mUsers,true);
+
+                //Arreglamos los usuarios en orden
+                List<User> sortedList = new ArrayList<>();
+                for (Indexs one:list) {
+                    for (User oneUser:mUsers) {
+                        if (oneUser.getId().equals(one.getSentedTo())){
+                            sortedList.add(oneUser);
+                        }
+                    }
+                }
+
+                userAdapter = new UserAdapter(getContext(),sortedList,true);
                 recyclerView.setAdapter(userAdapter);
             }
         });

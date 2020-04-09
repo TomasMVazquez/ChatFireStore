@@ -2,23 +2,24 @@ package com.applications.toms.chatfirestore.model;
 
 public class Indexs {
 
-    private String idIndex;
+    private String idChat;
+    private String sentedTo;
     private Integer index;
 
     public Indexs() {
     }
 
-    public Indexs(String idIndex, Integer index) {
-        this.idIndex = idIndex;
-        this.index = index;
+    public Indexs(String idChat, String sentedTo) {
+        this.idChat = idChat;
+        this.sentedTo = sentedTo;
     }
 
-    public String getIdIndex() {
-        return idIndex;
+    public String getIdChat() {
+        return idChat;
     }
 
-    public void setIdIndex(String idIndex) {
-        this.idIndex = idIndex;
+    public void setIdChat(String idIndex) {
+        this.idChat = idIndex;
     }
 
     public Integer getIndex() {
@@ -27,5 +28,13 @@ public class Indexs {
 
     public void setIndex(Integer index) {
         this.index = index;
+    }
+
+    public String getSentedTo() {
+        return sentedTo;
+    }
+
+    public void setSentedTo(String sentedTo) {
+        this.sentedTo = sentedTo;
     }
 }

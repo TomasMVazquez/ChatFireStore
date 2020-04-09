@@ -31,6 +31,10 @@ public class Keys {
     //Storage
     public static final String KEY_STORAGE = "uploads";
 
+    // INDEX
+    public static final String KEY_INDEX_COLLECTION = "Indexs";
+    public static final String KEY_INDEX = "index";
+
     //MSG
     public static final String KEY_MSG_USERID = "userid";
     public static final String KEY_MSG_SENTEDTO = "sentedTo";

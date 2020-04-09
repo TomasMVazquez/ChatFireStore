@@ -21,6 +21,7 @@ import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.fragments.ProfileFragment;
 import com.applications.toms.chatfirestore.fragments.UsersFragment;
 import com.applications.toms.chatfirestore.model.Chat;
+import com.applications.toms.chatfirestore.model.Message;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
@@ -31,6 +32,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -97,15 +99,65 @@ public class MainActivity extends AppCompatActivity {
 
         ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
 
+
         CollectionReference collectionReference = reference.collection(Keys.KEY_CHATS);
+
         collectionReference.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                    Log.d(TAG, "onEvent: ");
+                for (DocumentChange doc : queryDocumentSnapshots.getDocumentChanges()) {
+                    Chat chat = doc.getDocument().toObject(Chat.class);
+
+                    switch (doc.getType()) {
+                        case ADDED:
+                            break;
+                        case MODIFIED:
+                            Log.d(TAG, "onEvent: " + doc.getDocument().getId());
+                            break;
+                        case REMOVED:
+
+                            break;
+                    }
                 }
             }
         });
+        /*
+        collectionReference.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                final int[] unread = {0};
+                for (DocumentChange doc : queryDocumentSnapshots.getDocumentChanges()) {
+                    Chat chat = doc.getDocument().toObject(Chat.class);
+
+                    switch (doc.getType()) {
+                        case ADDED:
+                        case MODIFIED:
+                            if (chat.getReceiver().equals(firebaseUser.getUid()) || chat.getSender().equals(firebaseUser.getUid())){
+                                doc.getDocument().getReference().collection(Keys.KEY_MESSAGES).addSnapshotListener(new EventListener<QuerySnapshot>() {
+                                    @Override
+                                    public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                                        for (QueryDocumentSnapshot mDoc : queryDocumentSnapshots){
+                                            Message message = mDoc.toObject(Message.class);
+                                            if (message.getReceiver().equals(firebaseUser.getUid()) && !message.isIsseen()){
+                                                unread[0]++;
+                                                Log.d(TAG, "onEvent: " + unread[0]);
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                            break;
+                        case REMOVED:
+
+                            break;
+                    }
+                }
+
+            }
+        });
+
+         */
+
 
         viewPagerAdapter.addFragment(new ChatsFragment(),getString(R.string.fragment_title_chats));
         viewPagerAdapter.addFragment(new UsersFragment(),getString(R.string.fragment_title_users));

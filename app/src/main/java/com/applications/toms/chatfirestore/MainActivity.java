@@ -20,6 +20,7 @@ import android.widget.TextView;
 import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.fragments.ProfileFragment;
 import com.applications.toms.chatfirestore.fragments.UsersFragment;
+import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
@@ -29,11 +30,14 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,6 +96,16 @@ public class MainActivity extends AppCompatActivity {
         ViewPager viewPager = findViewById(R.id.view_pager);
 
         ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
+
+        CollectionReference collectionReference = reference.collection(Keys.KEY_CHATS);
+        collectionReference.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                    Log.d(TAG, "onEvent: ");
+                }
+            }
+        });
 
         viewPagerAdapter.addFragment(new ChatsFragment(),getString(R.string.fragment_title_chats));
         viewPagerAdapter.addFragment(new UsersFragment(),getString(R.string.fragment_title_users));

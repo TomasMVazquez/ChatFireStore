@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.applications.toms.chatfirestore.MessageActivity;
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.model.Chat;
+import com.applications.toms.chatfirestore.model.Message;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
@@ -74,7 +75,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         }
 
         if (ischat){
-            lastMessage(user.getId(), holder.last_msg);
+            lastMessage(user.getId(), holder.last_msg, holder.alert);
         }else {
             holder.last_msg.setVisibility(View.GONE);
         }
@@ -115,6 +116,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         private ImageView profile_image;
         private ImageView img_on;
         private ImageView img_off;
+        private ImageView alert;
         private TextView last_msg;
 
         public ViewHolder (View itemview){
@@ -124,6 +126,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
             profile_image = itemview.findViewById(R.id.profile_image);
             img_on = itemview.findViewById(R.id.img_on);
             img_off = itemview.findViewById(R.id.img_off);
+            alert = itemview.findViewById(R.id.alert);
             last_msg = itemview.findViewById(R.id.last_msg);
 
         }
@@ -131,7 +134,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     }
 
     //Revisar el último mensaje recibido/enviado
-    private void lastMessage(final String userid, final TextView last_msg){
+    private void lastMessage(final String userid, final TextView last_msg, final ImageView alert){
         theLastMessage = "";
 
         final FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -158,7 +161,17 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                             .addSnapshotListener(new EventListener<QuerySnapshot>() {
                         @Override
                         public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                            theLastMessage = queryDocumentSnapshots.getDocuments().get(0).toObject(Chat.class).getMessage();
+                            if (queryDocumentSnapshots.getDocuments().size() > 0) {
+                                Message msg = queryDocumentSnapshots.getDocuments().get(0).toObject(Message.class);
+                                theLastMessage = msg.getMessage();
+                                if (!msg.isIsseen() && msg.getReceiver().equals(firebaseUser.getUid())){
+                                    alert.setVisibility(View.VISIBLE);
+                                }else {
+                                    alert.setVisibility(View.GONE);
+                                }
+                            }else {
+                                theLastMessage = mContext.getString(R.string.no_msg);
+                            }
                             last_msg.setText(theLastMessage);
                         }
                     });

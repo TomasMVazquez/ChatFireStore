@@ -40,6 +40,8 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.StorageTask;
 import com.google.firebase.storage.UploadTask;
 
+import java.util.Objects;
+
 import de.hdodenhof.circleimageview.CircleImageView;
 
 import static android.app.Activity.RESULT_OK;
@@ -91,11 +93,11 @@ public class ProfileFragment extends Fragment {
             public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
                 User user = documentSnapshot.toObject(User.class);
                 username.setText(user.getUsername());
-                if (user.getImageURL().equals(getString(R.string.image_default))){
-                    image_profile.setImageResource(R.mipmap.ic_launcher);
-                }else {
-                    if (getActivity()!=null) {
-                        Glide.with(getActivity().getApplicationContext()).load(user.getImageURL()).into(image_profile);
+                if (getContext() != null) {
+                    if (user.getImageURL().equals(getString(R.string.image_default))) {
+                        image_profile.setImageResource(R.mipmap.ic_launcher);
+                    } else {
+                        Glide.with(Objects.requireNonNull(getContext()).getApplicationContext()).load(user.getImageURL()).into(image_profile);
                     }
                 }
             }

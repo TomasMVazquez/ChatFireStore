@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.applications.toms.chatfirestore.MessageActivity;
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.model.Chat;
+import com.applications.toms.chatfirestore.model.Message;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.util.Keys;
 import com.bumptech.glide.Glide;
@@ -158,7 +159,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                             .addSnapshotListener(new EventListener<QuerySnapshot>() {
                         @Override
                         public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                            theLastMessage = queryDocumentSnapshots.getDocuments().get(0).toObject(Chat.class).getMessage();
+                            if (queryDocumentSnapshots.getDocuments().size() > 0) {
+                                theLastMessage = queryDocumentSnapshots.getDocuments().get(0).toObject(Message.class).getMessage();
+                            }else {
+                                theLastMessage = mContext.getString(R.string.no_msg);
+                            }
                             last_msg.setText(theLastMessage);
                         }
                     });

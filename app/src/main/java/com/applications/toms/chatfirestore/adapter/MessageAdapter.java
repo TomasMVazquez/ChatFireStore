@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.applications.toms.chatfirestore.MessageActivity;
 import com.applications.toms.chatfirestore.R;
 import com.applications.toms.chatfirestore.model.Chat;
+import com.applications.toms.chatfirestore.model.Message;
 import com.applications.toms.chatfirestore.model.User;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
@@ -27,17 +28,17 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     private static final int MSG_TYPE_RIGHT = 1;
 
     private Context mContext;
-    private List<Chat> mChat;
+    private List<Message> mMsg;
     private String imageurl;
 
-    public MessageAdapter(Context mContext, List<Chat> mChat,String imageurl) {
+    public MessageAdapter(Context mContext, List<Message> mMsg, String imageurl) {
             this.mContext = mContext;
-            this.mChat= mChat;
+            this.mMsg= mMsg;
             this.imageurl = imageurl;
     }
 
-    public void setmChat(List<Chat> mChat) {
-            this.mChat= mChat;
+    public void setmChat(List<Message> mMsg) {
+            this.mMsg= mMsg;
             notifyDataSetChanged();
     }
 
@@ -56,9 +57,9 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 
-        Chat chat = mChat.get(position);
+        Message msg = mMsg.get(position);
 
-        holder.show_message.setText(chat.getMessage());
+        holder.show_message.setText(msg.getMessage());
 
         if (imageurl.equals(mContext.getString(R.string.image_default))){
             holder.profile_image.setImageResource(R.mipmap.ic_launcher);
@@ -66,8 +67,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             Glide.with(mContext.getApplicationContext()).load(imageurl).into(holder.profile_image);
         }
 
-        if (position == mChat.size()-1){
-            if (chat.isIsseen()){
+        if (position == mMsg.size()-1){
+            if (msg.isIsseen()){
                 holder.txt_seen.setText(mContext.getString(R.string.seen));
             }else {
                 holder.txt_seen.setText(mContext.getString(R.string.delivered));
@@ -79,7 +80,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
 
     @Override
     public int getItemCount() {
-            return mChat.size();
+            return mMsg.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder{
@@ -102,7 +103,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @Override
     public int getItemViewType(int position) {
         FirebaseUser fuser = FirebaseAuth.getInstance().getCurrentUser();
-        if (mChat.get(position).getSender().equals(fuser.getUid())){
+        if (mMsg.get(position).getSender().equals(fuser.getUid())){
             return MSG_TYPE_RIGHT;
         }else {
             return MSG_TYPE_LEFT;

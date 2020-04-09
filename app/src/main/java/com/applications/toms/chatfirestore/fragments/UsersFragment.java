@@ -47,6 +47,8 @@ import javax.annotation.Nullable;
  */
 public class UsersFragment extends Fragment {
 
+    public static final String NAME = "fragment_title_users";
+
     private UserAdapter userAdapter;
     private List<User> mUser;
 

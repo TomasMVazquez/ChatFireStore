@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
 public class ChatsFragment extends Fragment {
 
     private static final String TAG = "TOM-ChatsFragment";
+    public static final String NAME = "fragment_title_chats";
 
     //Componentes
     private RecyclerView recyclerView;

@@ -1,20 +1,14 @@
 package com.applications.toms.chatfirestore.model;
 
+import java.util.List;
+
 public class Chat {
 
     private Integer id;
     private String sender;
     private String receiver;
-    private String message;
-    private boolean isseen;
+    private List<Message> Messages;
 
-    public Chat(Integer id,String sender, String receiver, String message, boolean isseen) {
-        this.id = id;
-        this.sender = sender;
-        this.receiver = receiver;
-        this.message = message;
-        this.isseen = isseen;
-    }
 
     public Chat() {
     }
@@ -23,19 +17,31 @@ public class Chat {
         return id;
     }
 
-    public boolean isIsseen() {
-        return isseen;
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getSender() {
         return sender;
     }
 
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
     public String getReceiver() {
         return receiver;
     }
 
-    public String getMessage() {
-        return message;
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
+    }
+
+    public List<Message> getMessages() {
+        return Messages;
+    }
+
+    public void setMessages(List<Message> messages) {
+        Messages = messages;
     }
 }

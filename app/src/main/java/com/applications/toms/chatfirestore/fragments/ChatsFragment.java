@@ -36,6 +36,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -46,6 +47,7 @@ import javax.annotation.Nullable;
 public class ChatsFragment extends Fragment {
 
     private static final String TAG = "TOM-ChatsFragment";
+    public static final String NAME = "fragment_title_chats";
 
     //Componentes
     private RecyclerView recyclerView;
@@ -150,10 +152,8 @@ public class ChatsFragment extends Fragment {
                         case ADDED:
                             if (userList.contains(user.getId())) {
                                 if (mUsers.size() != 0) {
-                                    for (User u : mUsers) {
-                                        if (!user.getId().equals(u.getId())) {
-                                            mUsers.add(user);
-                                        }
+                                    if (!containsUser(mUsers,user.getId())){
+                                        mUsers.add(user);
                                     }
                                 } else {
                                     mUsers.add(user);
@@ -183,6 +183,15 @@ public class ChatsFragment extends Fragment {
             }
         });
 
+    }
+
+    public static boolean containsUser(Collection<User> c, String id) {
+        for(User o : c) {
+            if(o != null && o.getId().equals(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     //Método para mover el item del recycler según con quien hablé último

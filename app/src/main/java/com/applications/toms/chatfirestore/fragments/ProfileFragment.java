@@ -52,6 +52,7 @@ import static android.app.Activity.RESULT_OK;
 public class ProfileFragment extends Fragment {
 
     private static final int IMAGE_REQUEST = 1;
+    public static final String NAME = "fragment_title_profile";
 
     //Componentes
     private CircleImageView image_profile;

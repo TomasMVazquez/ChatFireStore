@@ -14,9 +14,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import com.applications.toms.chatfirestore.adapter.MyViewPagerAdapter;
 import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.fragments.ProfileFragment;
 import com.applications.toms.chatfirestore.fragments.UsersFragment;
@@ -24,6 +26,7 @@ import com.applications.toms.chatfirestore.model.Chat;
 import com.applications.toms.chatfirestore.model.Message;
 import com.applications.toms.chatfirestore.model.User;
 import com.applications.toms.chatfirestore.util.Keys;
+import com.applications.toms.chatfirestore.util.ResultListener;
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -38,11 +41,13 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -53,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     //Componentes
     private CircleImageView profile_image;
     private TextView username;
+
+    List<String> chatsList = new ArrayList<>();
 
     //Firebase Componentes
     private FirebaseUser firebaseUser;
@@ -96,78 +103,66 @@ public class MainActivity extends AppCompatActivity {
         //TabLayout y ViewPager
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         ViewPager viewPager = findViewById(R.id.view_pager);
-
-        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
-
-
-        CollectionReference collectionReference = reference.collection(Keys.KEY_CHATS);
-
-        collectionReference.addSnapshotListener(new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                for (DocumentChange doc : queryDocumentSnapshots.getDocumentChanges()) {
-                    Chat chat = doc.getDocument().toObject(Chat.class);
-
-                    switch (doc.getType()) {
-                        case ADDED:
-                            break;
-                        case MODIFIED:
-                            Log.d(TAG, "onEvent: " + doc.getDocument().getId());
-                            break;
-                        case REMOVED:
-
-                            break;
-                    }
-                }
-            }
-        });
+        //Asociar al view pager
+        tabLayout.setupWithViewPager(viewPager);
         /*
-        collectionReference.addSnapshotListener(new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                final int[] unread = {0};
-                for (DocumentChange doc : queryDocumentSnapshots.getDocumentChanges()) {
-                    Chat chat = doc.getDocument().toObject(Chat.class);
-
-                    switch (doc.getType()) {
-                        case ADDED:
-                        case MODIFIED:
-                            if (chat.getReceiver().equals(firebaseUser.getUid()) || chat.getSender().equals(firebaseUser.getUid())){
-                                doc.getDocument().getReference().collection(Keys.KEY_MESSAGES).addSnapshotListener(new EventListener<QuerySnapshot>() {
-                                    @Override
-                                    public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-                                        for (QueryDocumentSnapshot mDoc : queryDocumentSnapshots){
-                                            Message message = mDoc.toObject(Message.class);
-                                            if (message.getReceiver().equals(firebaseUser.getUid()) && !message.isIsseen()){
-                                                unread[0]++;
-                                                Log.d(TAG, "onEvent: " + unread[0]);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                            break;
-                        case REMOVED:
-
-                            break;
-                    }
-                }
-
-            }
-        });
-
-         */
-
+        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
 
         viewPagerAdapter.addFragment(new ChatsFragment(),getString(R.string.fragment_title_chats));
         viewPagerAdapter.addFragment(new UsersFragment(),getString(R.string.fragment_title_users));
         viewPagerAdapter.addFragment(new ProfileFragment(),getString(R.string.fragment_title_profile));
 
         viewPager.setAdapter(viewPagerAdapter);
+        */
 
-        tabLayout.setupWithViewPager(viewPager);
+        //Lista de Fragments
+        List<Fragment> fragmentList = new ArrayList<>();
+        fragmentList.add(new ChatsFragment());
+        fragmentList.add(new UsersFragment());
+        fragmentList.add(new ProfileFragment());
+
+        //Titulos del tab
+        List<String> titulos = new ArrayList<>();
+        titulos.add(getString(R.string.fragment_title_chats));
+        titulos.add(getString(R.string.fragment_title_users));
+        titulos.add(getString(R.string.fragment_title_profile));
+
+
+        //Adapter
+        MyViewPagerAdapter adapter = new MyViewPagerAdapter(getSupportFragmentManager(),fragmentList,titulos);
+        viewPager.setAdapter(adapter);
+
+        //Inicializado
+        viewPager.setCurrentItem(0);
+
+        chatList(new ResultListener<List<String>>() {
+            @Override
+            public void finish(List<String> result) {
+                final int[] unreadMsgs = {0};
+                for (String id:result) {
+                    reference.collection(Keys.KEY_CHATS).document(id).collection(Keys.KEY_MESSAGES).addSnapshotListener(new EventListener<QuerySnapshot>() {
+                        @Override
+                        public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+                            if (queryDocumentSnapshots.getDocuments().size() > 0) {
+                                for (DocumentChange doc : queryDocumentSnapshots.getDocumentChanges()){
+                                    Message msg = doc.getDocument().toObject(Message.class);
+                                    if (!msg.isIsseen() && msg.getReceiver().equals(firebaseUser.getUid())){
+                                        unreadMsgs[0]++;
+                                        String chatTitle = titulos.get(0).split(" ")[0] + " (" + unreadMsgs[0] + ")";
+                                        titulos.remove(0);
+                                        titulos.add(0,chatTitle);
+                                        adapter.setTitulos(titulos);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        });
 
     }
+
 
     //Menú del Toolbar
     @Override
@@ -190,38 +185,25 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    //ViewPager para pegar los fragment en el main activity
-    class ViewPagerAdapter extends FragmentPagerAdapter {
+    //Método para contar cantidad de mensajes sin leer y pasarlo al titulo del fragment
+    private void chatList(ResultListener<List<String>> resultListener){
+        reference.collection(Keys.KEY_CHATS).addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
 
-        private ArrayList<Fragment> fragments;
-        private ArrayList<String> titles;
+                for (QueryDocumentSnapshot snapshots: queryDocumentSnapshots) {
+                    Chat chat = snapshots.toObject(Chat.class);
+                    if (chat.getSender().equals(firebaseUser.getUid()) || chat.getReceiver().equals(firebaseUser.getUid())) {
+                        if (!chatsList.contains(snapshots.getId())) {
+                            chatsList.add(snapshots.getId());
+                        }
+                    }
+                }
 
-        ViewPagerAdapter (FragmentManager fm){
-            super(fm);
-            this.fragments = new ArrayList<>();
-            this.titles = new ArrayList<>();
-        }
+                resultListener.finish(chatsList);
 
-        @Override
-        public Fragment getItem(int position) {
-            return fragments.get(position);
-        }
-
-        @Override
-        public int getCount() {
-            return fragments.size();
-        }
-
-        public void addFragment (Fragment fragment, String title){
-            fragments.add(fragment);
-            titles.add(title);
-        }
-
-        @Nullable
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return titles.get(position);
-        }
+            }
+        });
     }
 
     //Método de cambio de estado en la base de datos

@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.applications.toms.chatfirestore.adapter.MessageAdapter;
+import com.applications.toms.chatfirestore.model.Message;
 import com.applications.toms.chatfirestore.notifications.APIService;
 import com.applications.toms.chatfirestore.fragments.ChatsFragment;
 import com.applications.toms.chatfirestore.model.Chat;
@@ -75,7 +76,7 @@ public class MessageActivity extends AppCompatActivity {
     private FirebaseFirestore reference;
 
     private MessageAdapter messageAdapter;
-    private List<Chat> mChat;
+    private List<Message> mMsg;
     private String userid;
     private ListenerRegistration seenListener;
     private APIService apiService;
@@ -158,7 +159,7 @@ public class MessageActivity extends AppCompatActivity {
                     if (user.getImageURL().equals(getString(R.string.image_default))) {
                         profile_image.setImageResource(R.mipmap.ic_launcher);
                     } else {
-                        Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
+                        Glide.with(MessageActivity.this).load(user.getImageURL()).into(profile_image);
                     }
 
                     readMessage(fuser.getUid(), userid, user.getImageURL());
@@ -181,8 +182,8 @@ public class MessageActivity extends AppCompatActivity {
                                 @Override
                                 public void onEvent(@androidx.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @androidx.annotation.Nullable FirebaseFirestoreException e) {
                                     for (QueryDocumentSnapshot dc : queryDocumentSnapshots) {
-                                        Chat chat = dc.toObject(Chat.class);
-                                        if (chat.getReceiver().equals(fuser.getUid()) && chat.getSender().equals(userId)) {
+                                        Message msg = dc.toObject(Message.class);
+                                        if (msg.getReceiver().equals(fuser.getUid()) && msg.getSender().equals(userId)) {
                                             HashMap<String, Object> hashMap = new HashMap<>();
                                             hashMap.put(Keys.KEY_CHATS_ISSEEN, true);
                                             dc.getReference().update(hashMap);
@@ -209,28 +210,36 @@ public class MessageActivity extends AppCompatActivity {
         hashMap.put(Keys.KEY_MESSAGES_MSG,message);
         hashMap.put(Keys.KEY_CHATS_ISSEEN,false);
 
+        //Mandar mensaje a la base de datos
         getChatDB(sender, receiver, new ResultListener<String>() {
             @Override
             public void finish(String result) {
                 DocumentReference chatRef;
 
+                //Tiene ya una base creada:
                 if (result != null){
                     chatRef = reference.collection(Keys.KEY_CHATS).document(result);
                 }else {
+                    //Si no la tiene la creamos la base de chat
                     chatRef = reference.collection(Keys.KEY_CHATS).document();
                     chatRef.set(hashMapUsers);
                     getUserMessage();
                 }
 
+                //Creamos la base del mensaje
                 final CollectionReference msgRef = chatRef.collection(Keys.KEY_MESSAGES);
-                getMessageList(msgRef, new ResultListener<List<Chat>>() {
+                getMessageList(msgRef, new ResultListener<List<Message>>() {
                     @Override
-                    public void finish(List<Chat> result) {
+                    public void finish(List<Message> result) {
                         hashMap.put(Keys.KEY_MESSAGES_ID,result.size());
                         msgRef.document(String.valueOf(result.size())).set(hashMap);
                     }
                 });
 
+
+                //Cambiamos los index
+                String sendedTo = fuser.getUid().equals(sender) ? receiver : sender;
+                addIndexes(chatRef.getId(),sendedTo);
 
             }
         });
@@ -252,6 +261,127 @@ public class MessageActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    //Obtener index
+    public void addIndexes(String chatRefId, String sendedTo){
+
+        final HashMap<String,Object> hashMapIndex = new HashMap<>();
+        hashMapIndex.put(Keys.KEY_INDEX,"0");
+
+        //Creamos la base del INDEX
+        DocumentReference chatRef = reference.collection(Keys.KEY_CHATS).document(chatRefId);
+
+        final CollectionReference indexRef = chatRef.collection(Keys.KEY_INDEX_COLLECTION);
+        indexRef.document(fuser.getUid()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()){
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        getIndexDB(document.getReference(), new ResultListener<String>() {
+                            @Override
+                            public void finish(String result) {
+                                changeIndexes(chatRefId,result,fuser.getUid());
+                                document.getReference().set(hashMapIndex);
+                            }
+                        });
+                    } else {
+                        changeIndexes(chatRefId,"0",fuser.getUid());
+                        document.getReference().set(hashMapIndex);
+                    }
+                }else {
+                    Log.d(TAG, "onComplete: unsuccess");
+                }
+            }
+        });
+
+        indexRef.document(sendedTo).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()){
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        getIndexDB(document.getReference(), new ResultListener<String>() {
+                            @Override
+                            public void finish(String result) {
+                                Log.d(TAG, "change index to: " + sendedTo);
+                                changeIndexes(chatRefId,result,sendedTo);
+                                document.getReference().set(hashMapIndex);
+                            }
+                        });
+                    } else {
+                        changeIndexes(chatRefId,"0",sendedTo);
+                        document.getReference().set(hashMapIndex);
+                    }
+                }else {
+                    Log.d(TAG, "onComplete: unsuccess");
+                }
+            }
+        });
+
+    }
+
+    public void changeIndexes(String chatRefId,String oldIndex,String user){
+
+        Log.d(TAG, "changeIndexes: to: " + user);
+        Integer untilIndex = Integer.valueOf(oldIndex);
+        Log.d(TAG, "changeIndexes: until: " + untilIndex);
+
+        CollectionReference chatsRef = reference.collection(Keys.KEY_CHATS);
+
+        chatsRef.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                if (task.isSuccessful()) {
+                    String rdo = null;
+                    for (QueryDocumentSnapshot queryDocumentSnapshot : task.getResult()) {
+                        if (!queryDocumentSnapshot.getId().equals(chatRefId)) {
+                            if (queryDocumentSnapshot.get(Keys.KEY_CHATS_SENDER).equals(user) || queryDocumentSnapshot.get(Keys.KEY_CHATS_RECEIVER).equals(user)) {
+                                getIndexDB(chatsRef.document(queryDocumentSnapshot.getId()).collection(Keys.KEY_INDEX_COLLECTION).document(user), new ResultListener<String>() {
+                                    @Override
+                                    public void finish(String result) {
+                                        Integer index = Integer.valueOf(result);
+                                        Log.d(TAG, "finish: index: " + index);
+                                        if (untilIndex != 0) {
+                                            Log.d(TAG, "finish: until != 0 -> " + untilIndex);
+                                            if (index < untilIndex) {
+                                                Log.d(TAG, "finish: index: " + index + " < until: " + untilIndex + "...");
+                                                String newIndex = String.valueOf((index + 1));
+                                                queryDocumentSnapshot.getReference().collection(Keys.KEY_INDEX_COLLECTION).document(user).update(Keys.KEY_INDEX, newIndex);
+                                            }else {
+                                                Log.d(TAG, "finish: index: " + index + " > until: " + untilIndex + "/");
+                                            }
+                                        }else {
+                                            String newIndex = String.valueOf((index + 1));
+                                            queryDocumentSnapshot.getReference().collection(Keys.KEY_INDEX_COLLECTION).document(user).update(Keys.KEY_INDEX, newIndex);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    public void getIndexDB(DocumentReference docRef,final ResultListener<String> resultListener){
+        docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()){
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        resultListener.finish(document.get(Keys.KEY_INDEX).toString());
+                    } else {
+                        resultListener.finish(null);
+                    }
+                }else {
+                    resultListener.finish(null);
+                }
+            }
+        });
     }
 
     //Enviar notificacion
@@ -290,7 +420,7 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
-    //Obtener mensajes del chat
+    //Obtener id del chat
     public void getChatDB(final String sender, final String receiver, final ResultListener<String> resultListener){
 
         CollectionReference chatsRef = reference.collection(Keys.KEY_CHATS);
@@ -317,58 +447,58 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
-    //Obtener la lusta de mensajes
-    public void getMessageList(CollectionReference msgRef, final ResultListener<List<Chat>> resultListener){
-        final List<Chat> chatList = new ArrayList<>();
+    //Obtener la lista de mensajes
+    public void getMessageList(CollectionReference msgRef, final ResultListener<List<Message>> resultListener){
+        final List<Message> msgList = new ArrayList<>();
 
         msgRef.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                chatList.clear();
+                msgList.clear();
                 for (QueryDocumentSnapshot queryDocumentSnapshot:task.getResult()) {
-                    Chat chat = queryDocumentSnapshot.toObject(Chat.class);
-                    chatList.add(chat);
+                    Message msg = queryDocumentSnapshot.toObject(Message.class);
+                    msgList.add(msg);
                 }
-                resultListener.finish(chatList);
+                resultListener.finish(msgList);
             }
         });
     }
 
     //Leer mensajes
     private void readMessage(final String myid, final String userid, final String imageurl){
-        mChat = new ArrayList<>();
+        mMsg = new ArrayList<>();
 
         final CollectionReference chatRef = reference.collection(Keys.KEY_CHATS);
 
-        messageAdapter = new MessageAdapter(MessageActivity.this,mChat,imageurl);
+        messageAdapter = new MessageAdapter(MessageActivity.this,mMsg,imageurl);
 
 
         getChatDB(myid, userid, new ResultListener<String>() {
             @Override
             public void finish(String result) {
-                mChat.clear();
-                if (result!=null) {
+                mMsg.clear();
+                if (result != null) {
                     CollectionReference msgRef = chatRef.document(result).collection(Keys.KEY_MESSAGES);
                     msgRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
                         @Override
                         public void onEvent(@Nullable QuerySnapshot snapshots, @Nullable FirebaseFirestoreException e) {
                             for (DocumentChange dc : snapshots.getDocumentChanges()) {
-                                Chat chat = dc.getDocument().toObject(Chat.class);
+                                Message msg = dc.getDocument().toObject(Message.class);
                                 switch (dc.getType()) {
                                     case ADDED:
-                                        if (mChat.size() > 0) {
-                                            if (!mChat.get(mChat.size() - 1).getId().equals(chat.getId())) {
-                                                mChat.add(chat);
+                                        if (mMsg.size() > 0) {
+                                            if (!mMsg.get(mMsg.size() - 1).getId().equals(msg.getId())) {
+                                                mMsg.add(msg);
                                             }
                                         } else {
-                                            mChat.add(chat);
+                                            mMsg.add(msg);
                                         }
                                         break;
                                     case MODIFIED:
                                         //Change database so the message in the chat appears as seen instead of delivered
-                                        for (Chat modifChat:mChat) {
-                                            if (modifChat.getId().equals(chat.getId())){
-                                                mChat.set(mChat.indexOf(modifChat),chat);
+                                        for (Message modifMsg : mMsg) {
+                                            if (modifMsg.getId().equals(msg.getId())){
+                                                mMsg.set(mMsg.indexOf(modifMsg),msg);
                                             }
                                         }
                                         break;
@@ -378,7 +508,7 @@ public class MessageActivity extends AppCompatActivity {
                                 }
                             }
 
-                            sortArray(mChat);
+                            sortArray(mMsg);
                         }
                     });
                 }
@@ -387,17 +517,17 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
-    private void sortArray(List<Chat> chats){
-        Collections.sort(chats, new Comparator<Chat>() {
+    private void sortArray(List<Message> msgs){
+        Collections.sort(msgs, new Comparator<Message>() {
             @Override
-            public int compare(Chat o1, Chat o2) {
+            public int compare(Message o1, Message o2) {
                 return o1.getId() - o2.getId();
             }
         });
 
-        messageAdapter.setmChat(chats);
+        messageAdapter.setmChat(msgs);
         recyclerView.setAdapter(messageAdapter);
-        recyclerView.smoothScrollToPosition(chats.size());
+        recyclerView.smoothScrollToPosition(msgs.size());
     }
 
     private void currentUser(String userid){

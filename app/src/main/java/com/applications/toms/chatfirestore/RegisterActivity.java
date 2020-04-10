@@ -15,6 +15,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.applications.toms.chatfirestore.util.Keys;
+import com.applications.toms.chatfirestore.util.LoadingDialog;
 import com.applications.toms.chatfirestore.util.Util;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -39,6 +40,8 @@ public class RegisterActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private FirebaseFirestore reference;
 
+    private LoadingDialog loadingDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,17 +63,27 @@ public class RegisterActivity extends AppCompatActivity {
         //Firebase Auth
         auth = FirebaseAuth.getInstance();
 
+        //Loading custom view para que sepa que esta cargando el login
+        loadingDialog = new LoadingDialog(RegisterActivity.this);
+
         //Al hacer click en el boton registrar verifica y llama al método para registrar
         btn_register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //Escondemos el teclado
+                Util.hideKeyboard(RegisterActivity.this);
+                //Empezamos el loading
+                loadingDialog.startLoadingDialog();
+
                 String txt_username = username.getText().toString();
                 String txt_email = email.getText().toString();
                 String txt_password = password.getText().toString();
 
                 if (TextUtils.isEmpty(txt_username) || TextUtils.isEmpty(txt_email) || TextUtils.isEmpty(txt_password)){
+                    loadingDialog.endLoadingDialog();
                     Snackbar.make(registerContainer,getString(R.string.error_verification_empty),Snackbar.LENGTH_SHORT).show();
                 }else if (txt_password.length() < 6){
+                    loadingDialog.endLoadingDialog();
                     Snackbar.make(registerContainer,getString(R.string.error_short_password),Snackbar.LENGTH_SHORT).show();
                 }else {
                     register(txt_username,txt_email,txt_password);
@@ -118,11 +131,13 @@ public class RegisterActivity extends AppCompatActivity {
                     userRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                         @Override
                         public void onSuccess(DocumentSnapshot documentSnapshot) {
+
                             if (!documentSnapshot.exists()) {
                                //Usuario No Existe Creando...
                                 userRef.set(user).addOnSuccessListener(new OnSuccessListener<Void>() {
                                     @Override
                                     public void onSuccess(Void aVoid) {
+                                        loadingDialog.endLoadingDialog();
                                         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                                         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                                         startActivity(intent);
@@ -130,12 +145,14 @@ public class RegisterActivity extends AppCompatActivity {
                                     }
                                 });
                             }else {
+                                loadingDialog.endLoadingDialog();
                                 Snackbar.make(registerContainer,getString(R.string.error_email_already_registered),Snackbar.LENGTH_SHORT).show();
                             }
                         }
                     });
                 }else {
                     Snackbar.make(registerContainer,getString(R.string.error_register),Snackbar.LENGTH_SHORT).show();
+                    loadingDialog.endLoadingDialog();
                 }
             }
         });

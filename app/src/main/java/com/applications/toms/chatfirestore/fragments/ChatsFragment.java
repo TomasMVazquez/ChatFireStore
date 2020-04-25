@@ -82,6 +82,13 @@ public class ChatsFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        LinearLayoutManager llm = new LinearLayoutManager(getContext());
+        llm.setOrientation(LinearLayoutManager.VERTICAL);
+        recyclerView.setLayoutManager(llm);
+        userAdapter = new UserAdapter(getContext(),new ArrayList<>(),true);
+        recyclerView.setAdapter(userAdapter);
+
         //Firebase
         fuser = FirebaseAuth.getInstance().getCurrentUser();
         reference = FirebaseFirestore.getInstance();
@@ -130,9 +137,6 @@ public class ChatsFragment extends Fragment {
 
                         // Get new Instance ID token
                         String token = task.getResult().getToken();
-
-                        // Log and toast
-                        Log.d(TAG, "onComplete: token is " + token);
                         //LLamar al método para actualizar el token en la base de datos
                         updateTokenDB(token);
                     }
@@ -249,14 +253,13 @@ public class ChatsFragment extends Fragment {
                     }
                 }
 
-                userAdapter = new UserAdapter(getContext(),sortedList,true);
-                recyclerView.setAdapter(userAdapter);
+                userAdapter.setmUsers(sortedList);
             }
         });
 
     }
 
-    public static boolean containsUser(Collection<User> c, String id) {
+    private static boolean containsUser(Collection<User> c, String id) {
         for(User o : c) {
             if(o != null && o.getId().equals(id)) {
                 return true;
@@ -265,10 +268,5 @@ public class ChatsFragment extends Fragment {
         return false;
     }
 
-    //Método para mover el item del recycler según con quien hablé último
-    public static void refresh(String userId){
-        Log.d(TAG, "refresh: " + userId);
-        userAdapter.moveChat(userId);
-    }
 
 }

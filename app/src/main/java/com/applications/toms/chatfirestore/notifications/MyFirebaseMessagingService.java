@@ -53,12 +53,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (!currentUser.equals(user)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sendNotificationThroughChannel(remoteMessage);
-                ChatsFragment.refresh(user);
+                //ChatsFragment.refresh(user);
             } else {
                 if (fuser != null && sentedTo.equals(fuser.getUid())) {
-                    Log.d(TAG, "onMessageReceived: send to " + sentedTo);
                     sendNotification(remoteMessage);
-                    ChatsFragment.refresh(user);
+                    //ChatsFragment.refresh(user);
                 }
             }
         }
@@ -71,10 +70,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String icon = remoteMessage.getData().get(Keys.KEY_MSG_ICON);
         String title = remoteMessage.getData().get(Keys.KEY_MSG_TITLE);
         String body = remoteMessage.getData().get(Keys.KEY_MSG_BODY);
-
-        Log.d(TAG, "sendNotification: user= " + user);
-        Log.d(TAG, "sendNotification: title= " + title);
-        Log.d(TAG, "sendNotification: body= " + body);
 
         RemoteMessage.Notification notification = remoteMessage.getNotification();
 
@@ -105,10 +100,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String icon = remoteMessage.getData().get(Keys.KEY_MSG_ICON);
         String title = remoteMessage.getData().get(Keys.KEY_MSG_TITLE);
         String body = remoteMessage.getData().get(Keys.KEY_MSG_BODY);
-
-        Log.d(TAG, "sendNotification: user= " + user);
-        Log.d(TAG, "sendNotification: title= " + title);
-        Log.d(TAG, "sendNotification: body= " + body);
 
         RemoteMessage.Notification notification = remoteMessage.getNotification();
 

@@ -129,7 +129,6 @@ public class MessageActivity extends AppCompatActivity {
                 String msg = text_send.getText().toString().trim();
                 if (!msg.equals("")){
                     sendMessage(fuser.getUid(),userid,msg);
-                    ChatsFragment.refresh(userid);
                 }else {
                     Snackbar.make(bottom,getString(R.string.error_no_msg),Snackbar.LENGTH_SHORT).show();
                 }
@@ -290,8 +289,6 @@ public class MessageActivity extends AppCompatActivity {
                         changeIndexes(chatRefId,"0",fuser.getUid());
                         document.getReference().set(hashMapIndex);
                     }
-                }else {
-                    Log.d(TAG, "onComplete: unsuccess");
                 }
             }
         });
@@ -305,7 +302,6 @@ public class MessageActivity extends AppCompatActivity {
                         getIndexDB(document.getReference(), new ResultListener<String>() {
                             @Override
                             public void finish(String result) {
-                                Log.d(TAG, "change index to: " + sendedTo);
                                 changeIndexes(chatRefId,result,sendedTo);
                                 document.getReference().set(hashMapIndex);
                             }
@@ -314,8 +310,6 @@ public class MessageActivity extends AppCompatActivity {
                         changeIndexes(chatRefId,"0",sendedTo);
                         document.getReference().set(hashMapIndex);
                     }
-                }else {
-                    Log.d(TAG, "onComplete: unsuccess");
                 }
             }
         });
@@ -324,9 +318,7 @@ public class MessageActivity extends AppCompatActivity {
 
     public void changeIndexes(String chatRefId,String oldIndex,String user){
 
-        Log.d(TAG, "changeIndexes: to: " + user);
         Integer untilIndex = Integer.valueOf(oldIndex);
-        Log.d(TAG, "changeIndexes: until: " + untilIndex);
 
         CollectionReference chatsRef = reference.collection(Keys.KEY_CHATS);
 
@@ -342,15 +334,10 @@ public class MessageActivity extends AppCompatActivity {
                                     @Override
                                     public void finish(String result) {
                                         Integer index = Integer.valueOf(result);
-                                        Log.d(TAG, "finish: index: " + index);
                                         if (untilIndex != 0) {
-                                            Log.d(TAG, "finish: until != 0 -> " + untilIndex);
                                             if (index < untilIndex) {
-                                                Log.d(TAG, "finish: index: " + index + " < until: " + untilIndex + "...");
                                                 String newIndex = String.valueOf((index + 1));
                                                 queryDocumentSnapshot.getReference().collection(Keys.KEY_INDEX_COLLECTION).document(user).update(Keys.KEY_INDEX, newIndex);
-                                            }else {
-                                                Log.d(TAG, "finish: index: " + index + " > until: " + untilIndex + "/");
                                             }
                                         }else {
                                             String newIndex = String.valueOf((index + 1));
@@ -503,7 +490,6 @@ public class MessageActivity extends AppCompatActivity {
                                         }
                                         break;
                                     case REMOVED:
-                                        Log.d(TAG, "Removed: " + dc.getDocument().getData());
                                         break;
                                 }
                             }

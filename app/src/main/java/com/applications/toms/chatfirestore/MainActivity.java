@@ -105,15 +105,6 @@ public class MainActivity extends AppCompatActivity {
         ViewPager viewPager = findViewById(R.id.view_pager);
         //Asociar al view pager
         tabLayout.setupWithViewPager(viewPager);
-        /*
-        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager());
-
-        viewPagerAdapter.addFragment(new ChatsFragment(),getString(R.string.fragment_title_chats));
-        viewPagerAdapter.addFragment(new UsersFragment(),getString(R.string.fragment_title_users));
-        viewPagerAdapter.addFragment(new ProfileFragment(),getString(R.string.fragment_title_profile));
-
-        viewPager.setAdapter(viewPagerAdapter);
-        */
 
         //Lista de Fragments
         List<Fragment> fragmentList = new ArrayList<>();
@@ -126,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
         titulos.add(getString(R.string.fragment_title_chats));
         titulos.add(getString(R.string.fragment_title_users));
         titulos.add(getString(R.string.fragment_title_profile));
-
 
         //Adapter
         MyViewPagerAdapter adapter = new MyViewPagerAdapter(getSupportFragmentManager(),fragmentList,titulos);
@@ -154,6 +144,8 @@ public class MainActivity extends AppCompatActivity {
                                         adapter.setTitulos(titulos);
                                     }
                                 }
+                            }else {
+                                adapter.setTitulos(titulos);
                             }
                         }
                     });
@@ -178,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
             case R.id.logout:
                 FirebaseAuth.getInstance().signOut();
                 startActivity(new Intent(MainActivity.this, StartActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
-//                finish();
                 return true;
         }
 

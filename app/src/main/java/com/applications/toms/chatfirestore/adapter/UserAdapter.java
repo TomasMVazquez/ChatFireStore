@@ -187,22 +187,4 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     }
 
 
-    //Métodos para mover mensaje según el último con el que se habló
-    public void moveChat(String userId){
-        for (User u : mUsers) {
-            if (u.getId().equals(userId)) {
-                Log.d(TAG, "moving");
-                moveItems(mUsers.indexOf(u));
-                break;
-            }
-        }
-    }
-
-    private void moveItems(int position){
-        User targetUser = mUsers.get(position);
-        mUsers.remove(position);
-        mUsers.add(0,targetUser);
-        this.notifyItemMoved(position,0);
-    }
-
 }

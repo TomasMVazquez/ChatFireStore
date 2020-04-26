@@ -7,16 +7,18 @@ public class Message {
     private String message;
     private String receiver;
     private String sender;
+    private String time;
 
     public Message() {
     }
 
-    public Message(Integer id, boolean isseen, String message, String receiver, String sender) {
+    public Message(Integer id, boolean isseen, String message, String receiver, String sender, String time) {
         this.id = id;
         this.isseen = isseen;
         this.message = message;
         this.receiver = receiver;
         this.sender = sender;
+        this.time = time;
     }
 
     public Integer getId() {
@@ -57,5 +59,13 @@ public class Message {
 
     public void setSender(String sender) {
         this.sender = sender;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 }

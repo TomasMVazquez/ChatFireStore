@@ -9,14 +9,14 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 
 import java.util.List;
 
-public class MyViewPagerAdapter extends FragmentStatePagerAdapter {
+public class MyViewPagerChatAdapter extends FragmentStatePagerAdapter {
 
     //Atributos
     private List<Fragment> fragmentList;
     private List<String> titulos;
 
     //constructor
-    public MyViewPagerAdapter(FragmentManager fm, List<Fragment> fragmentList, List<String> titulos) {
+    public MyViewPagerChatAdapter(FragmentManager fm, List<Fragment> fragmentList, List<String> titulos) {
         super(fm);
         this.fragmentList = fragmentList;
         this.titulos = titulos;

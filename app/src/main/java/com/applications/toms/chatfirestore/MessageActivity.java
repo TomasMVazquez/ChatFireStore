@@ -47,11 +47,15 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.annotation.Nullable;
 
@@ -63,6 +67,8 @@ import retrofit2.Response;
 public class MessageActivity extends AppCompatActivity {
 
     private static final String TAG = "TOM-MessageActivity";
+
+    private static final String DATE_FORMAT_1 = "yy-MM-dd HH:mm";
 
     //Componentes
     private CircleImageView profile_image;
@@ -208,6 +214,7 @@ public class MessageActivity extends AppCompatActivity {
         hashMap.put(Keys.KEY_MESSAGES_REC,receiver);
         hashMap.put(Keys.KEY_MESSAGES_MSG,message);
         hashMap.put(Keys.KEY_CHATS_ISSEEN,false);
+        hashMap.put(Keys.KEY_MESSAGES_TIME,getCurrentDate());
 
         //Mandar mensaje a la base de datos
         getChatDB(sender, receiver, new ResultListener<String>() {
@@ -532,6 +539,12 @@ public class MessageActivity extends AppCompatActivity {
 
     }
 
+    private static String getCurrentDate() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_1);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Date today = Calendar.getInstance().getTime();
+        return dateFormat.format(today);
+    }
 
     @Override
     protected void onRestart() {

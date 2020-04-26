@@ -27,6 +27,7 @@ public class Keys {
     public static final String KEY_MESSAGES_MSG = "message";
     public static final String KEY_MESSAGES_REC = "receiver";
     public static final String KEY_MESSAGES_SEN = "sender";
+    public static final String KEY_MESSAGES_TIME = "time";
 
     //Storage
     public static final String KEY_STORAGE = "uploads";
